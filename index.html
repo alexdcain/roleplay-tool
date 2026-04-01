@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Lift — Roleplay Generator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f5f5f2;
+    --bg-info: #e6f1fb;
+    --bg-success: #eaf3de;
+    --bg-warning: #faeeda;
+    --bg-danger: #fcebeb;
+    --text: #1a1a1a;
+    --text-secondary: #666;
+    --text-tertiary: #999;
+    --text-info: #185fa5;
+    --text-success: #3b6d11;
+    --text-warning: #854f0b;
+    --text-danger: #a32d2d;
+    --border: rgba(0,0,0,0.12);
+    --border-md: rgba(0,0,0,0.2);
+    --radius: 8px;
+    --radius-lg: 12px;
+    --fitness-bg: #EEEDFE;
+    --fitness-text: #3C3489;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1e1e;
+      --bg-secondary: #2a2a2a;
+      --bg-info: #0c2a45;
+      --bg-success: #0f2a08;
+      --bg-warning: #2e1a04;
+      --bg-danger: #2a0f0f;
+      --text: #f0f0f0;
+      --text-secondary: #aaa;
+      --text-tertiary: #666;
+      --text-info: #85b7eb;
+      --text-success: #97c459;
+      --text-warning: #ef9f27;
+      --text-danger: #f09595;
+      --border: rgba(255,255,255,0.12);
+      --border-md: rgba(255,255,255,0.22);
+      --fitness-bg: #26215C;
+      --fitness-text: #AFA9EC;
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .app { max-width: 960px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .app-header { margin-bottom: 1.5rem; }
+  .app-header h1 { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .app-header p { font-size: 14px; color: var(--text-secondary); }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .tab { padding: 8px 20px; border-radius: var(--radius); border: 1px solid var(--border-md); font-size: 13px; font-weight: 500; cursor: pointer; background: var(--bg); color: var(--text-secondary); transition: all 0.15s; }
+  .tab:hover { background: var(--bg-secondary); }
+  .tab.active { background: var(--bg-info); color: var(--text-info); border-color: var(--text-info); }
+  .picker-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+  .picker-row label { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
+  select { font-size: 13px; border: 1px solid var(--border-md); border-radius: var(--radius); padding: 6px 10px; background: var(--bg); color: var(--text); cursor: pointer; }
+  .wheel-row { display: flex; gap: 20px; align-items: flex-start; }
+  .wheel-col { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .spin-btn { margin-top: 1rem; padding: 10px 36px; border-radius: var(--radius); border: 1px solid var(--border-md); background: var(--bg); font-size: 15px; font-weight: 600; cursor: pointer; color: var(--text); transition: all 0.15s; }
+  .spin-btn:hover { background: var(--bg-secondary); }
+  .spin-btn:active { transform: scale(0.97); }
+  .spin-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .result-label { font-size: 14px; font-weight: 600; color: var(--text); text-align: center; margin-top: 8px; min-height: 20px; }
+  .scenario-list-col { flex: 1; min-width: 0; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-tertiary); }
+  .diff-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .dot-1 { background: #2D9E75; } .dot-2 { background: #378ADD; } .dot-3 { background: #BA7517; } .dot-4 { background: #E24B4A; }
+  .scenario-list-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .scenario-list { border: 1px solid var(--border); border-radius: var(--radius); overflow-y: auto; max-height: 360px; background: var(--bg); }
+  .scenario-item { padding: 9px 12px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.1s; display: flex; align-items: flex-start; gap: 8px; }
+  .scenario-item:last-child { border-bottom: none; }
+  .scenario-item:hover { background: var(--bg-secondary); }
+  .scenario-item.active { background: var(--bg-info); }
+  .scenario-item-title { font-size: 13px; color: var(--text); line-height: 1.4; flex: 1; }
+  .scenario-item.active .scenario-item-title { color: var(--text-info); font-weight: 600; }
+  .scenario-item-cat { font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
+  .scenario-item.active .scenario-item-cat { color: var(--text-info); opacity: 0.75; }
+  .diff-dot-sm { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+  .card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-top: 1.25rem; display: none; }
+  .card.visible { display: block; }
+  .card-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .badge { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: var(--radius); white-space: nowrap; }
+  .badge-sales { background: var(--bg-warning); color: var(--text-warning); }
+  .badge-coaching { background: var(--bg-success); color: var(--text-success); }
+  .badge-fitness { background: var(--fitness-bg); color: var(--fitness-text); }
+  .badge-program { background: var(--bg-danger); color: var(--text-danger); }
+  .diff-1 { background: var(--bg-success); color: var(--text-success); }
+  .diff-2 { background: var(--bg-info); color: var(--text-info); }
+  .diff-3 { background: var(--bg-warning); color: var(--text-warning); }
+  .diff-4 { background: var(--bg-danger); color: var(--text-danger); }
+  .scenario-title { font-size: 20px; font-weight: 600; color: var(--text); margin-bottom: 1rem; }
+  .section-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; margin-top: 16px; }
+  .section-body { font-size: 14px; color: var(--text-secondary); line-height: 1.65; }
+  .cues-list, .debrief-list { list-style: none; padding: 0; }
+  .cues-list li { font-size: 14px; color: var(--text-secondary); padding: 4px 0 4px 16px; position: relative; line-height: 1.55; }
+  .cues-list li::before { content: "·"; position: absolute; left: 0; color: var(--text-tertiary); font-size: 18px; line-height: 1.2; }
+  .debrief-list li { font-size: 14px; color: var(--text-secondary); padding: 4px 0 4px 16px; position: relative; }
+  .debrief-list li::before { content: "?"; position: absolute; left: 0; font-size: 11px; color: var(--text-tertiary); top: 7px; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+  .brief-area { margin-top: 6px; }
+  .generate-btn { font-size: 13px; padding: 7px 18px; border-radius: var(--radius); border: 1px solid var(--text-info); background: var(--bg-info); color: var(--text-info); cursor: pointer; font-weight: 600; transition: all 0.15s; }
+  .generate-btn:hover { opacity: 0.85; }
+  .generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .regen-btn { font-size: 12px; padding: 5px 12px; border-radius: var(--radius); border: 1px solid var(--border-md); background: var(--bg); color: var(--text-secondary); cursor: pointer; font-weight: 500; transition: all 0.15s; }
+  .regen-btn:hover { background: var(--bg-secondary); color: var(--text); }
+  .brief-box { background: var(--bg-secondary); border-radius: var(--radius); padding: 1.25rem; margin-top: 8px; }
+  .brief-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+  .brief-name { font-size: 16px; font-weight: 600; color: var(--text); }
+  .brief-section { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 2px; }
+  .brief-toggle { display: flex; align-items: center; justify-content: space-between; padding: 7px 0; cursor: pointer; user-select: none; }
+  .brief-toggle:hover .brief-section-title { color: var(--text-secondary); }
+  .brief-section-title { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; transition: color 0.1s; }
+  .brief-arrow { font-size: 10px; color: var(--text-tertiary); transition: transform 0.15s; }
+  .brief-arrow.open { transform: rotate(90deg); }
+  .brief-content { display: none; padding-bottom: 8px; }
+  .brief-content.open { display: block; }
+  .brief-list { list-style: none; padding: 0; }
+  .brief-list li { font-size: 13px; color: var(--text-secondary); padding: 3px 0 3px 14px; position: relative; line-height: 1.55; }
+  .brief-list li::before { content: "·"; position: absolute; left: 0; color: var(--text-tertiary); }
+  .loading-state { display: flex; align-items: center; gap: 8px; padding: 12px 0; }
+  .loading-spinner { width: 16px; height: 16px; border: 2px solid var(--border-md); border-top-color: var(--text-info); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13px; color: var(--text-tertiary); font-style: italic; }
+  .error-state { font-size: 13px; color: var(--text-danger); padding: 8px 0; }
+  .lock-btn { font-size: 12px; padding: 5px 12px; border-radius: var(--radius); border: 1px solid var(--border-md); background: var(--bg); color: var(--text-secondary); cursor: pointer; font-weight: 500; transition: all 0.15s; }
+  .lock-btn:hover { background: var(--bg-secondary); color: var(--text); }
+  .locked-banner { display: none; align-items: center; justify-content: space-between; gap: 10px; background: var(--bg-warning); border: 1px solid var(--text-warning); border-radius: var(--radius); padding: 10px 14px; margin-bottom: 1rem; flex-wrap: wrap; }
+  .locked-banner.visible { display: flex; }
+  .locked-banner-left { display: flex; align-items: center; gap: 8px; }
+  .locked-name { font-size: 14px; font-weight: 600; color: var(--text-warning); }
+  .locked-label { font-size: 12px; color: var(--text-warning); opacity: 0.8; }
+  .unlock-btn { font-size: 12px; padding: 5px 12px; border-radius: var(--radius); border: 1px solid var(--text-warning); background: var(--bg); color: var(--text-warning); cursor: pointer; font-weight: 600; white-space: nowrap; transition: all 0.15s; }
+  .unlock-btn:hover { background: var(--bg-warning); }
+  .locked-brief-box { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; margin-top: 6px; }
+
+  /* ── Login overlay ── */
+  .login-overlay { position: fixed; inset: 0; background: var(--bg); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+  .login-box { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2rem; width: 340px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+  .login-box h2 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+  .login-box p { font-size: 13px; color: var(--text-secondary); margin-bottom: 1.25rem; }
+  .login-field { margin-bottom: 12px; }
+  .login-field label { font-size: 12px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 4px; }
+  .login-field input { width: 100%; font-size: 14px; border: 1px solid var(--border-md); border-radius: var(--radius); padding: 8px 10px; background: var(--bg); color: var(--text); }
+  .login-submit { width: 100%; padding: 10px; border-radius: var(--radius); border: none; background: var(--text-info); color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 4px; }
+  .login-submit:hover { opacity: 0.88; }
+  .login-error { font-size: 13px; color: var(--text-danger); margin-top: 8px; text-align: center; }
+
+  /* ── Top bar ── */
+  .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 8px; }
+  .top-bar-user { font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; gap: 10px; }
+  .top-bar-name { font-weight: 600; color: var(--text); }
+  .top-bar-badge { font-size: 11px; padding: 2px 8px; border-radius: var(--radius); background: var(--bg-info); color: var(--text-info); font-weight: 600; }
+  .top-bar-logout { font-size: 12px; color: var(--text-tertiary); cursor: pointer; padding: 4px 8px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg); }
+  .top-bar-logout:hover { background: var(--bg-secondary); }
+
+  /* ── Dashboard / reporting tabs ── */
+  .report-section { margin-bottom: 2rem; }
+  .report-section h2 { font-size: 16px; font-weight: 600; margin-bottom: 1rem; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+  .stat-card { background: var(--bg-secondary); border-radius: var(--radius); padding: 1rem; }
+  .stat-label { font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+  .stat-value { font-size: 28px; font-weight: 700; color: var(--text); }
+  .stat-sub { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .report-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .report-table th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 600; color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border); }
+  .report-table td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+  .report-table tr:last-child td { border-bottom: none; }
+  .report-table tr:hover td { background: var(--bg-secondary); }
+  .export-row { display: flex; gap: 8px; margin-top: 1rem; flex-wrap: wrap; }
+  .export-btn { font-size: 12px; padding: 6px 14px; border-radius: var(--radius); border: 1px solid var(--border-md); background: var(--bg); color: var(--text-secondary); cursor: pointer; font-weight: 500; }
+  .export-btn:hover { background: var(--bg-secondary); color: var(--text); }
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-tertiary); font-size: 14px; }
+
+  /* ── Assignments ── */
+  .assignment-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+  .assignment-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  .assignment-title { font-size: 15px; font-weight: 600; color: var(--text); }
+  .assignment-meta { font-size: 12px; color: var(--text-tertiary); margin-top: 2px; }
+  .assignment-progress { font-size: 12px; font-weight: 600; }
+  .progress-bar-wrap { height: 6px; background: var(--bg-secondary); border-radius: 3px; margin: 8px 0; }
+  .progress-bar-fill { height: 6px; background: var(--text-success); border-radius: 3px; transition: width 0.3s; }
+  .checklist { list-style: none; margin-top: 8px; }
+  .checklist li { display: flex; align-items: center; gap: 8px; padding: 6px 0; font-size: 13px; color: var(--text-secondary); border-bottom: 1px solid var(--border); }
+  .checklist li:last-child { border-bottom: none; }
+  .checklist li.done { color: var(--text-tertiary); text-decoration: line-through; }
+  .checklist-check { width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--border-md); flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .checklist-check.checked { background: var(--text-success); border-color: var(--text-success); color: #fff; font-size: 10px; }
+  .assign-form { background: var(--bg-secondary); border-radius: var(--radius); padding: 1.25rem; margin-bottom: 1.5rem; }
+  .assign-form h3 { font-size: 14px; font-weight: 600; margin-bottom: 1rem; }
+  .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+  .form-row label { font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+  .form-row select, .form-row input { font-size: 13px; border: 1px solid var(--border-md); border-radius: var(--radius); padding: 6px 10px; background: var(--bg); color: var(--text); }
+  .form-row input[type=number] { width: 70px; }
+  .form-row input[type=text], .form-row input[type=date] { flex: 1; min-width: 120px; }
+  .submit-assign-btn { font-size: 13px; padding: 8px 20px; border-radius: var(--radius); border: none; background: var(--text-info); color: #fff; font-weight: 600; cursor: pointer; }
+  .submit-assign-btn:hover { opacity: 0.88; }
+  .status-badge { font-size: 11px; padding: 2px 8px; border-radius: var(--radius); font-weight: 600; white-space: nowrap; }
+  .status-active { background: var(--bg-info); color: var(--text-info); }
+  .status-complete { background: var(--bg-success); color: var(--text-success); }
+  .status-overdue { background: var(--bg-danger); color: var(--text-danger); }
+
+  /* ── Admin panel ── */
+  .user-row { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .user-row:last-child { border-bottom: none; }
+  .user-name { font-size: 14px; font-weight: 600; color: var(--text); flex: 1; min-width: 120px; }
+  .user-id-label { font-size: 12px; color: var(--text-tertiary); }
+  .admin-toggle { font-size: 12px; padding: 4px 10px; border-radius: var(--radius); border: 1px solid var(--border-md); background: var(--bg); color: var(--text-secondary); cursor: pointer; font-weight: 500; }
+  .admin-toggle:hover { background: var(--bg-secondary); }
+  .admin-toggle.is-admin { background: var(--bg-info); color: var(--text-info); border-color: var(--text-info); }
+</style>
+</head>
+<body>
+
+<!-- Login overlay -->
+<div class="login-overlay" id="login-overlay">
+  <div class="login-box">
+    <h2>The Lift — Roleplay Generator</h2>
+    <p>Sign in to continue. New users are created automatically on first login.</p>
+    <div class="login-field"><label>Name</label><input id="login-name" type="text" placeholder="Your full name" autocomplete="off" /></div>
+    <div class="login-field"><label>ID / PIN</label><input id="login-id" type="password" placeholder="Choose any ID or PIN" autocomplete="off" /></div>
+    <button class="login-submit" onclick="doLogin()">Sign In</button>
+    <div class="login-error" id="login-error"></div>
+    <div id="setup-instructions" style="display:none;margin-top:1rem;padding:1rem;background:var(--bg-secondary);border-radius:var(--radius);font-size:12px;color:var(--text-secondary);line-height:1.7;">
+      <strong style="color:var(--text);">One-time setup required:</strong><br>
+      1. Open <a href="https://docs.google.com/spreadsheets/d/1OG9HtdaUZkC5Yyhy6YjTesexR6lqVEZ-vHdjPYaas8k" target="_blank" style="color:var(--text-info)">the Google Sheet</a><br>
+      2. Click <strong>Extensions → Apps Script</strong><br>
+      3. Delete any existing code and paste the Apps Script code (provided separately)<br>
+      4. Click <strong>Deploy → New Deployment → Web App</strong><br>
+      5. Set "Execute as" = <strong>Me</strong>, "Who has access" = <strong>Anyone</strong><br>
+      6. Copy the deployment URL and paste it in the file where it says <code>APPS_SCRIPT_URL = ''</code><br>
+      7. Save and reload this file
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <div class="top-bar">
+    <div class="app-header" style="margin-bottom:0">
+      <h1>The Lift — Roleplay Generator</h1>
+    </div>
+    <div class="top-bar-user" id="top-bar-user" style="display:none">
+      <span class="top-bar-name" id="top-bar-name"></span>
+      <span class="top-bar-badge" id="top-bar-badge" style="display:none">Admin</span>
+      <button class="top-bar-logout" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+
+  <div class="tabs" id="main-tabs">
+    <button class="tab active" onclick="switchTab('sales')">Sales Consultation</button>
+    <button class="tab" onclick="switchTab('coaching')">Client Coaching</button>
+    <button class="tab" onclick="switchTab('fitness')">Fitness Coaching</button>
+    <button class="tab" onclick="switchTab('program')">Program Design</button>
+    <button class="tab" onclick="switchTab('assignments')" id="tab-btn-assignments">My Assignments</button>
+    <button class="tab" onclick="switchTab('dashboard')" id="tab-btn-dashboard" style="display:none">Dashboard</button>
+    <button class="tab" onclick="switchTab('admin')" id="tab-btn-admin" style="display:none">Admin</button>
+  </div>
+
+  <div class="locked-banner" id="locked-banner">
+    <div class="locked-banner-left">
+      <span class="locked-name" id="locked-banner-name"></span>
+      <span class="locked-label">— client locked across all tabs</span>
+    </div>
+    <button class="unlock-btn" onclick="unlockClient()">Unlock client</button>
+  </div>
+
+  <div id="tab-sales">
+    <div class="picker-row"><label>Category:</label>
+      <select id="sales-filter" onchange="onFilterChange('sales')">
+        <option value="all">All categories</option>
+        <option value="Consultation Flow">Consultation Flow</option>
+        <option value="Objections">Objections</option>
+        <option value="Post-Sale">Post-Sale</option>
+        <option value="Marketing & Outreach">Marketing & Outreach</option>
+      </select>
+    </div>
+    <div class="wheel-row">
+      <div class="wheel-col">
+        <canvas id="canvas-sales" width="280" height="280"></canvas>
+        <div class="result-label" id="result-sales"></div>
+        <button class="spin-btn" id="btn-sales" onclick="spin('sales')">Spin</button>
+      </div>
+      <div class="scenario-list-col">
+        <div class="legend">
+          <div class="legend-item"><div class="diff-dot dot-1"></div>Foundation</div>
+          <div class="legend-item"><div class="diff-dot dot-2"></div>Developing</div>
+          <div class="legend-item"><div class="diff-dot dot-3"></div>Advanced</div>
+          <div class="legend-item"><div class="diff-dot dot-4"></div>Expert</div>
+        </div>
+        <div class="scenario-list-label">Select a scenario</div>
+        <div class="scenario-list" id="list-sales"></div>
+      </div>
+    </div>
+    <div class="card" id="card-sales"></div>
+  </div>
+
+  <div id="tab-coaching" style="display:none">
+    <div class="picker-row"><label>Category:</label>
+      <select id="coaching-filter" onchange="onFilterChange('coaching')">
+        <option value="all">All categories</option>
+        <option value="Session Management">Session Management</option>
+        <option value="Client Situations">Client Situations</option>
+        <option value="Habit & Lifestyle">Habit & Lifestyle</option>
+        <option value="Admin & Membership">Admin & Membership</option>
+        <option value="Team & HR">Team & HR</option>
+        <option value="Fuel Consultation">Fuel Consultation</option>
+        <option value="Athlete Check-In">Athlete Check-In</option>
+      </select>
+    </div>
+    <div class="wheel-row">
+      <div class="wheel-col">
+        <canvas id="canvas-coaching" width="280" height="280"></canvas>
+        <div class="result-label" id="result-coaching"></div>
+        <button class="spin-btn" id="btn-coaching" onclick="spin('coaching')">Spin</button>
+      </div>
+      <div class="scenario-list-col">
+        <div class="legend">
+          <div class="legend-item"><div class="diff-dot dot-1"></div>Foundation</div>
+          <div class="legend-item"><div class="diff-dot dot-2"></div>Developing</div>
+          <div class="legend-item"><div class="diff-dot dot-3"></div>Advanced</div>
+          <div class="legend-item"><div class="diff-dot dot-4"></div>Expert</div>
+        </div>
+        <div class="scenario-list-label">Select a scenario</div>
+        <div class="scenario-list" id="list-coaching"></div>
+      </div>
+    </div>
+    <div class="card" id="card-coaching"></div>
+  </div>
+
+  <div id="tab-fitness" style="display:none">
+    <div class="picker-row"><label>Subcategory:</label>
+      <select id="fitness-filter" onchange="onFilterChange('fitness')">
+        <option value="all">All subcategories</option>
+        <option value="Corrective Exercise">Corrective Exercise</option>
+        <option value="Intensity & Loading">Intensity & Loading</option>
+        <option value="Programming & Vision">Programming & Vision</option>
+        <option value="Client Education">Client Education</option>
+        <option value="Common Limitations">Common Limitations</option>
+      </select>
+    </div>
+    <div class="wheel-row">
+      <div class="wheel-col">
+        <canvas id="canvas-fitness" width="280" height="280"></canvas>
+        <div class="result-label" id="result-fitness"></div>
+        <button class="spin-btn" id="btn-fitness" onclick="spin('fitness')">Spin</button>
+      </div>
+      <div class="scenario-list-col">
+        <div class="legend">
+          <div class="legend-item"><div class="diff-dot dot-1"></div>Foundation</div>
+          <div class="legend-item"><div class="diff-dot dot-2"></div>Developing</div>
+          <div class="legend-item"><div class="diff-dot dot-3"></div>Advanced</div>
+          <div class="legend-item"><div class="diff-dot dot-4"></div>Expert</div>
+        </div>
+        <div class="scenario-list-label">Select a scenario</div>
+        <div class="scenario-list" id="list-fitness"></div>
+      </div>
+    </div>
+    <div class="card" id="card-fitness"></div>
+  </div>
+
+  <div id="tab-program" style="display:none">
+    <div class="picker-row">
+      <label>Category:</label>
+      <select id="program-filter" onchange="onFilterChange('program')">
+        <option value="all">All categories</option>
+        <option value="Fat Loss">Fat Loss</option>
+        <option value="Muscle & Strength">Muscle & Strength</option>
+        <option value="Performance & Athletic">Performance & Athletic</option>
+        <option value="Corrective & Rehab">Corrective & Rehab</option>
+        <option value="Special Populations">Special Populations</option>
+        <option value="Travel & Remote">Travel & Remote</option>
+      </select>
+      <label style="margin-left:8px;">Difficulty:</label>
+      <select id="program-difficulty-filter" onchange="onFilterChange('program')">
+        <option value="all">All difficulties</option>
+        <option value="1">Foundation</option>
+        <option value="2">Developing</option>
+        <option value="3">Advanced</option>
+        <option value="4">Expert</option>
+      </select>
+      <label style="margin-left:8px;">Days/week:</label>
+      <select id="program-days-filter" onchange="onFilterChange('program')">
+        <option value="all">Any days</option>
+        <option value="2">2 days</option>
+        <option value="3">3 days</option>
+        <option value="4">4 days</option>
+        <option value="5">5 days</option>
+        <option value="6">6 days</option>
+      </select>
+    </div>
+    <div class="wheel-row">
+      <div class="wheel-col">
+        <canvas id="canvas-program" width="280" height="280"></canvas>
+        <div class="result-label" id="result-program"></div>
+        <button class="spin-btn" id="btn-program" onclick="spin('program')">Spin</button>
+      </div>
+      <div class="scenario-list-col">
+        <div class="legend">
+          <div class="legend-item"><div class="diff-dot dot-1"></div>Foundation</div>
+          <div class="legend-item"><div class="diff-dot dot-2"></div>Developing</div>
+          <div class="legend-item"><div class="diff-dot dot-3"></div>Advanced</div>
+          <div class="legend-item"><div class="diff-dot dot-4"></div>Expert</div>
+        </div>
+        <div class="scenario-list-label">Select a scenario</div>
+        <div class="scenario-list" id="list-program"></div>
+      </div>
+    </div>
+    <div class="card" id="card-program"></div>
+  </div>
+
+  <!-- Assignments tab -->
+  <div id="tab-assignments" style="display:none">
+    <div id="assignments-coach-view"></div>
+  </div>
+
+  <!-- Dashboard tab (admin only) -->
+  <div id="tab-dashboard" style="display:none">
+    <div id="dashboard-view"></div>
+  </div>
+
+  <!-- Admin tab (admin only) -->
+  <div id="tab-admin" style="display:none">
+    <div id="admin-view"></div>
+  </div>
+
+</div>
+
+<script>
+const SCENARIOS = {
+  sales: [
+    { title: "Greeting and framing", category: "Consultation Flow", difficulty: 1, objective: "Set the tone in the first 60 seconds, earn trust, and frame the hour so the prospect knows exactly what's coming and why.", setup: "Prospect walks in. They seem unsure what this actually is — they're expecting a sales pitch. Your job is to disarm that before it becomes resistance.", cues: ["Use their name at the door: 'Hey, you must be [name] — I've been looking forward to this'","Ask how they found you. If it's a referral: 'Why do you think they recommended us?'","Frame the four steps: goal, injury history, movement screen, path forward — 'By the end of the hour I'd like us to decide on a path forward together. Sound good?'","If they say no to 'looking to start today': 'No sweat. Are you shopping around or just not ready to jump in?'","Make it feel like a road map appointment, not a sales meeting"], debrief: ["Did the prospect know what was happening and why at every step?","Was the 'path forward together' framing used?","How was the referral source handled?"] },
+    { title: "Goal discussion", category: "Consultation Flow", difficulty: 1, objective: "Identify the surface, real, and deepest goal. Connect emotional drivers to the program before you ever talk about the program.", setup: "Prospect says their goal is 'just to lose a few pounds and get back in shape.' You need to get past that.", cues: ["'What's your #1 goal — what are you hoping to get out of this?'","'What does success look like? Tell me how we'll know you've been successful'","'Why this goal? Why choose this over another one?'","'Why now? What made you take action on this right now?'","'How will we measure your progress?'","Do not move to WHWW until you've hit all five questions"], debrief: ["Were all five goal questions asked?","Was the emotional driver identified?","Did the coach stay in question mode?"] },
+    { title: "Why this? Why now?", category: "Consultation Flow", difficulty: 2, objective: "Uncover the real urgency behind this consult.", setup: "Prospect says 'I've been meaning to do something for a while.' They're here but the fire behind it isn't obvious yet.", cues: ["'What made you decide to take action on this right now?'","If they shrug: 'Something shifted recently — what was it?'","Mirror their language back","Don't manufacture urgency — help them articulate their own","Chris Voss: 'How does staying where you are right now work out for you?'"], debrief: ["Was urgency found or forced?","Did the coach use the Chris Voss mirror?","Did the prospect articulate the cost of inaction themselves?"] },
+    { title: "How long have you had this goal?", category: "Consultation Flow", difficulty: 1, objective: "Use WHWW's H question to surface timeline and set up the 'why didn't it work' conversation.", setup: "Prospect laughs when they say 'oh, I've been wanting to do this for years.'", cues: ["'How long have you been working on this goal?'","Don't let them minimize it: 'Years of frustration is significant'","The longer the timeline, the more emotional weight — acknowledge it","This is the bridge to 'why didn't it work'"], debrief: ["Did the coach take the long timeline seriously?","Was it connected to the next question naturally?","Did the prospect seem more emotionally engaged?"] },
+    { title: "What have you tried?", category: "Consultation Flow", difficulty: 2, objective: "Use the first W in WHWW to understand history and identify patterns.", setup: "Prospect has done a big box gym, a Beachbody program, and a previous trainer. None of it stuck.", cues: ["'What have you tried so far to accomplish this?'","'What was that like? What did you enjoy? What didn't you enjoy?'","Listen for patterns — accountability? Programming? Life got in the way?","Don't trash what they tried — ask 'Why do you think it didn't stick?'","What you learn here informs your pitch — reference it later"], debrief: ["Were all WHWW follow-ups asked?","Was a pattern identified?","Was anything they tried criticized directly?"] },
+    { title: "PAR-Q and limitations", category: "Consultation Flow", difficulty: 2, objective: "Collect injury and health history without making it feel clinical.", setup: "Prospect mentions a knee replacement 18 months ago and 'some blood pressure stuff' they're vague about.", cues: ["'Are there any other factors? Chronic aches, pains, injuries, medical conditions, surgeries?'","Move into the PAR-Q checklist: injuries, asthma, diabetes, hypertension, heart disease","Fill in the PAR-Q on the mutually visible screen — do it together","Normalize it: 'We ask everyone these'","Stay in your lane: screening for safety and program design, not diagnosing"], debrief: ["Was the PAR-Q filled out together?","Did the coach stay in scope?","Was the prospect reassured, not alarmed?"] },
+    { title: "Why didn't it work?", category: "Consultation Flow", difficulty: 3, objective: "Use the final W in WHWW to identify the real failure point.", setup: "Prospect spent $800 on a trainer last year and barely saw results. They're defensive.", cues: ["'Why do you think your previous attempts didn't work? Where did they come up short?'","If they say 'I don't know': 'That's fine — we're going to find out right now with our TEST protocol'","Don't rush to your pitch — let them finish","The answer they give is your personalization hook for the entire pitch"], debrief: ["Was this asked after the PAR-Q?","Did the coach resist pitching before the prospect finished?","Was the answer used later in the pitch?"] },
+    { title: "How our program works", category: "Consultation Flow", difficulty: 2, objective: "Explain the T3 Method and F3 Triad tied to what the prospect said they need.", setup: "You've completed the WHWW and PAR-Q. Now walk them through The Lift's approach.", cues: ["F3 Triad: Form (body comp), Function (movement quality), Fuel (nutrition, sleep, stress)","'Without addressing all three, any progress is likely unsustainable'","Personalize it — reference what they told you","Introduce The Lift App as the accountability hub","Keep it under 3 minutes"], debrief: ["Was the F3 Triad explained in the client's terms?","Was it customized or canned?","Was The Lift App mentioned as a tool?"] },
+    { title: "Movement screen", category: "Consultation Flow", difficulty: 2, objective: "Walk the prospect through a movement screen comfortably.", setup: "Time to transition to the floor. The prospect is self-conscious.", cues: ["'It's not high intensity — it'll give us everything we need to build your ideal program'","Brief the movements before each one","Narrate what you're observing in plain language","Perform interventions, retest, narrate the improvement","Make it a trust-building moment: they see you solving problems before they've paid"], debrief: ["Did the prospect know what to expect before each movement?","Were interventions used as a trust-building moment?","Was jargon avoided?"] },
+    { title: "Screen recap and starting point", category: "Consultation Flow", difficulty: 2, objective: "Translate screen findings into a clear starting point.", setup: "Back in the office. Prospect asks: 'So what does all that mean for me?'", cues: ["Use InBody data + screen observations together","Name what they CAN do and CAN'T YET","Show the Phases of Transformation — starting phase and what comes next","Use the goal calculator if applicable","'Can't yet' is different from 'can't'"], debrief: ["Was the recap tied to their stated goal?","Was the starting phase explained with the next phase in view?","Did the prospect leave feeling optimistic?"] },
+    { title: "Keys to success / requirements", category: "Consultation Flow", difficulty: 2, objective: "Walk through the non-negotiables and get explicit buy-in before presenting membership.", setup: "Prospect is nodding along but seems like they'll 'try it for a month.'", cues: ["Read each 'Always' requirement one at a time and ask for confirmation","Specific numbers: 3 workouts/week, 90% exercise compliance, 80%+ nutrition compliance","'Do you think you can do these things consistently?' — don't accept a vague yes","If they can only do 2 days: 'We also write workouts for other gyms or home'","Commitment conversation happens here, not after the close"], debrief: ["Were the specific compliance numbers stated?","Did the coach ask for real confirmation?","Was the 90-day window framed as a minimum?"] },
+    { title: "Membership presentation", category: "Consultation Flow", difficulty: 3, objective: "Present pricing options clearly, anchor value before price, and make a specific recommendation.", setup: "You've done the screen and requirements. Time to show pricing.", cues: ["Lead with a recommendation before listing options","Present in order: single pay year (15% off), 90-day (10% off), biweekly (no contract)","Use specific numbers — name the total, savings, biweekly equivalent","After presenting: stop talking","Session rate if asked: 'About $63–65 per session'"], debrief: ["Was a recommendation made before options were listed?","Were specific dollar amounts used?","Did the coach pause after presenting?"] },
+    { title: "Closing", category: "Consultation Flow", difficulty: 4, objective: "Ask for the sale clearly. Don't talk past the ask.", setup: "Prospect says 'This all sounds really good.' You need to move from enthusiasm to a yes.", cues: ["Use one close: 'Would that work better for you?' / 'Which card would you like to use?' / 'Does this all sound good to you?'","Deliver one close — don't use all four","After the ask: silence","Chris Voss if they stall: 'What's the concern you haven't said out loud yet?'"], debrief: ["Was a specific close used?","Was there silence after the ask?","Was a Chris Voss question deployed when needed?"] },
+    { title: "Objection — time", category: "Objections", difficulty: 3, objective: "Address the time objection by validating it then reframing 3x/week as manageable.", setup: "Prospect says 'I just don't have the time right now.'", cues: ["Validate: 'Which is why having structure matters more when you're busy, not less'","'What does your week typically look like?'","3 sessions/week is 3% of waking hours — name that number","'We also write workouts for other gyms or home'","Explore schedule flexibility, not a discount"], debrief: ["Was the reframe earned through questions?","Were the 3x/week requirements addressed?","Did the coach explore the schedule?"] },
+    { title: "Objection — money", category: "Objections", difficulty: 4, objective: "Separate 'can't afford it' from 'not sure it's worth it.'", setup: "Prospect says 'It's a lot of money. I wasn't expecting that.'", cues: ["Do not immediately offer a discount or biweekly option","'Is it a question of the monthly number or whether you feel like it's worth it?'","If value: go back to goal and cost of inaction","If cash flow: present biweekly as a legitimate structure, not a bailout","The Objections Cheat Sheet lives in Drive — know it cold"], debrief: ["Was a discount offered before the value conversation?","Was the real issue identified?","Was the emotional cost of inaction revisited?"] },
+    { title: "Objection — spouse or partner", category: "Objections", difficulty: 4, objective: "Handle the absent decision-maker without creating conflict at home.", setup: "Prospect says 'I need to talk to my husband first.'", cues: ["Don't dismiss it — it's legitimate","'Is this something you'd have his support on if you decided it was right for you?'","'Would it help if we scheduled a time for both of you?'","Never pit the prospect against their partner","Confirm a specific follow-up time before they leave"], debrief: ["Was the partner framed as a resource?","Was a specific follow-up time confirmed?","Was a joint consult offered?"] },
+    { title: "Objection — will it work for me?", category: "Objections", difficulty: 3, objective: "Address efficacy doubt using WHWW data and a process story.", setup: "Prospect says 'I've tried stuff like this before and never got results.'", cues: ["'That's a completely fair question — I'm not going to tell you to just trust us'","Use WHWW data: 'You mentioned accountability broke down before — here's how we address that'","Tell a process story — not a result story","Chris Voss: 'What part of this approach feels unclear?'","Name the customization from the assessment data specifically"], debrief: ["Was the answer personalized to their WHWW history?","Was a process story used?","Was customization named specifically?"] },
+    { title: "Objection — 'I need to think about it'", category: "Objections", difficulty: 4, objective: "Get to the real concern underneath 'let me think about it.'", setup: "End of consult. Prospect says 'Let me sleep on it.'", cues: ["'Of course — this is a real commitment and I want you to feel good about it'","'Is there a specific part you want to think through?'","Chris Voss: 'What would need to happen for this to be a no-brainer?'","'What's the concern you haven't said out loud yet?'","Confirm a specific follow-up time within 48 hours"], debrief: ["Did the coach find the real hesitation?","Was a follow-up time locked in?","Were Chris Voss questions used naturally?"] },
+    { title: "Follow-up call — no close", category: "Post-Sale", difficulty: 3, objective: "Re-engage a prospect who didn't close without sounding desperate.", setup: "Three days since consult, no response to your text. You're calling.", cues: ["Open with something tied to their goal, not 'just checking in'","Voicemail: under 90 seconds, specific next step, direct number","Reference the consult: 'We talked about [their goal] and I wanted to follow up'","Clear CTA: offer the free session as the bridge","Tone = confidence, not desperation"], debrief: ["Was the message personalized?","Was there a specific CTA?","Did the tone communicate confidence?"] },
+    { title: "Elevator pitch", category: "Marketing & Outreach", difficulty: 2, objective: "Describe The Lift clearly in 30–60 seconds.", setup: "Networking event. Someone asks 'So what do you do?'", cues: ["Lead with who you help: 'Busy adults, mostly 35–55, who've tried to get in shape and couldn't make it stick'","'Small group personal training — custom program per person, 5:1 ratio max'","'If the program, coach, or facility isn't the right fit — you pay nothing'","End with an invitation: 'Free hour consult — no commitment, just a roadmap'","Under 60 seconds"], debrief: ["Was it about the client, not the gym?","Was it under 60 seconds?","Did it end with an invitation?"] },
+    { title: "Service explanation", category: "Marketing & Outreach", difficulty: 2, objective: "Explain the difference between SGPT and private training.", setup: "Warm referral asks: 'What's the difference between small group and 1-on-1?'", cues: ["Ask their goal before recommending","SGPT: custom program, shared floor, 5:1 max, community, full inclusions","Private: one coach, one client, maximum customization","'We choose based on goals, needs, and preferences'","Recommend honestly — even if it's the lower-priced option"], debrief: ["Was a question asked before recommending?","Was the right option recommended?","Were full inclusions mentioned?"] },
+    { title: "Who we help", category: "Marketing & Outreach", difficulty: 1, objective: "Articulate The Lift's ideal client in vivid, recognizable terms.", setup: "Someone asks: 'Is The Lift just for people who are already in shape?'", cues: ["'We get a lot of PT referrals — our coaches are NASM Corrective Exercise Specialists'","'We specifically work with people who feel like the gym has never really worked for them'","Paint the picture: busy schedule, 35–55, wants structure and accountability","'If the program, coach, or facility aren't the right fit, you pay nothing'","The free consult is the no-risk entry point"], debrief: ["Was the fear of being 'not fit enough' addressed?","Was the NASM background mentioned?","Did it feel like an open door?"] },
+    { title: "B2B referral conversation", category: "Marketing & Outreach", difficulty: 3, objective: "Build a referral partnership with a local health professional.", setup: "Meeting a local chiropractor. You want to explore a formal referral relationship.", cues: ["'Our role is to help transition clients back into normal activity by stabilizing and strengthening injured sites'","'We're not a substitute for PT — we're the next step after graduation'","'We coordinate with the doctor or PT to make sure the treatment plan remains unchanged'","'All we ask is that when a patient is ready to return to activity, you think of us as the bridge'","Offer a free consult for one of their patients as a trial"], debrief: ["Was it positioned as a patient benefit?","Was scope of practice distinction made?","Was the ask specific and easy to say yes to?"] },
+  ],
+  coaching: [
+    { title: "Arrival and greeting", category: "Session Management", difficulty: 1, objective: "Set the session tone in the first 60 seconds.", setup: "Client walks in looking tired. They don't initiate conversation.", cues: ["Use their name immediately at the door","Don't comment on their energy — redirect through check-in: 'How are we doing today?'","Match their energy, then gradually lift it","Get them to the floor within 2–3 minutes"], debrief: ["Did the coach notice the client's energy and respond?","Was the transition to check-in natural?","Did the client seem 'arrived' before the warm-up?"] },
+    { title: "Daily goal setting", category: "Session Management", difficulty: 1, objective: "Set a real session intention connected to their program goal.", setup: "Client checks in: 'I just want to get through it today.'", cues: ["'Okay, let's make that productive then'","'What's one thing you want to feel at the end of this session?'","Tie it to their primary goal from intake","Say it out loud — naming it creates accountability","Reference it at the end of the session"], debrief: ["Was a real session goal set?","Was it tied to their primary goal from intake?","Did the coach reference it at the end?"] },
+    { title: "Coaching correction", category: "Session Management", difficulty: 2, objective: "Correct a movement fault positively without stacking cues.", setup: "Client is rounding their lower back on a deadlift. Third time this session.", cues: ["Cue the positive: 'Proud chest, long spine' — not 'stop rounding'","One cue per set maximum","If verbal isn't landing, use a tactile cue or reference point","Acknowledge improvement immediately when it clicks","If fault is recurring, reconsider whether load or variation is appropriate"], debrief: ["Was the cue positive-based?","Was only one cue given per set?","Was improvement acknowledged immediately?"] },
+    { title: "Coaching progression", category: "Session Management", difficulty: 2, objective: "Advance a client based on readiness — not flattery.", setup: "Client just nailed goblet squats at prescribed weight. One set left. Do you progress?", cues: ["Check form first, load second","'How did that feel on a scale of 1–10?'","Frame it as earned: 'You've hit the mark on form and effort'","'This one might feel harder — that's exactly the point'","Tie it back to their program phase"], debrief: ["Was progression based on form quality?","Was the client informed and prepared?","Was it connected to their program phase?"] },
+    { title: "Coaching regression", category: "Session Management", difficulty: 3, objective: "Pull back on load or complexity without making the client feel like they failed.", setup: "Client's split squat form is breaking down under load. They're visibly frustrated.", cues: ["'We're going to build this the right way — that's how we get the result'","Don't over-explain — a brief sentence and move on","Find something they do well in the regression and name it","If fatigue is a factor, check in on Fuel"], debrief: ["Did the client's confidence stay intact?","Was the regression explained briefly and positively?","Did the coach move forward quickly?"] },
+    { title: "Pre-set cueing", category: "Session Management", difficulty: 1, objective: "Deliver effective, concise setup cues. Two max.", setup: "Client is about to do a barbell hip thrust. They tend to lose tension at the top.", cues: ["Two cues maximum — one position, one intention","Action-based: 'Drive hips to the ceiling and squeeze at the top'","Ask 'Ready?' and wait for a real answer","If they need a mid-set correction, your pre-set cue wasn't clear enough"], debrief: ["Were there two cues or fewer?","Were they action-based?","Was 'Ready?' asked and answered?"] },
+    { title: "Intra-set check-in", category: "Session Management", difficulty: 1, objective: "Stay present during a set without breaking concentration.", setup: "Client is mid-set on a 45-second goblet squat hold. They're hanging on.", cues: ["Specific: '10 more seconds, stay tall' not 'you got this'","If form drifts: one word max — 'chest up'","Know when silence is the right call","Eye contact and a nod can do more than words"], debrief: ["Did the coach add value or distraction?","Was the encouragement specific?","Was silence used deliberately?"] },
+    { title: "Post-set cueing", category: "Session Management", difficulty: 2, objective: "Debrief the set and set one clear intention for the next one.", setup: "Client just finished a tough set of Romanian deadlifts.", cues: ["First: 'What did that feel like?'","Confirm what worked before adjusting","One focus for the next set — not a list","Match their recovery pace"], debrief: ["Was the client's experience acknowledged first?","Was there one clear focus for next set?","Did the coach control pacing?"] },
+    { title: "Session summary", category: "Session Management", difficulty: 1, objective: "Close the session with a specific recap connected to the client's goal.", setup: "Last 2 minutes. Client had a solid session.", cues: ["One specific win — not generic: 'Your hip hinge has come a long way from week one'","Connect to their primary goal","One takeaway for outside the gym","Preview what's next: '90-day check-in is coming — we'll pull your InBody'","Reference the session goal set at check-in"], debrief: ["Was the summary specific?","Was the session goal referenced?","Did the client leave with a clear takeaway?"] },
+    { title: "Upset client — lack of progress", category: "Client Situations", difficulty: 4, objective: "Address a frustrated client honestly using data and the F3 Triad.", setup: "Client says: 'I've been doing this for 8 weeks and nothing has changed.'", cues: ["Acknowledge first — don't defend the program","Pull the data: InBody, session compliance, habit tracking","F3 Triad diagnostic: Form, Function, Fuel","If compliance is solid, go to Fuel: sleep, nutrition, MyFitnessPal","'The program is sound — the gap is outside the gym'"], debrief: ["Was frustration honored before problem-solving?","Was the F3 Triad used as the diagnostic?","Was the real variable identified with data?"] },
+    { title: "Upset client — poor compliance", category: "Client Situations", difficulty: 4, objective: "Have a direct, caring conversation about a client who isn't showing up.", setup: "Client has missed 4 of their last 8 sessions. Progress has stalled.", cues: ["'I want to make sure this program is still working for you — what's been getting in the way?'","Reference The Lift App attendance data — be specific","Ask questions until you hit the real barrier","'We missed you — I'm reaching out because I want to get you back on track'","End with a re-commitment the client owns"], debrief: ["Was it a conversation, not a confrontation?","Was app data referenced specifically?","Did the client own the plan?"] },
+    { title: "Upset client — program too hard", category: "Client Situations", difficulty: 3, objective: "Address an overwhelmed client. Validate first, then investigate.", setup: "Client says: 'I'm sore all the time. This feels like too much.'", cues: ["Validate: 'That's real — we take that seriously'","Investigate before adjusting: 'Let's look at the full picture'","F3 Triad check: sleep, nutrition, extra cardio","Chronic soreness is often a Fuel problem, not a training problem","Frame any adjustment as optimization, not backing off"], debrief: ["Was pain validated before analysis?","Was F3 Triad used before any change?","Did the client feel supported to continue?"] },
+    { title: "Injury status check", category: "Client Situations", difficulty: 3, objective: "Navigate an injury disclosure with enough info to train safely.", setup: "Client arrives: 'My shoulder has been bugging me since the weekend.'", cues: ["Don't train through it without gathering information","Ask: location, onset, aggravating/relieving factors, whether they've seen anyone","Stay in scope — you're not diagnosing","Reference the PAR-Q from intake","Adjust, document in The Lift App, flag for primary coach if needed"], debrief: ["Was enough info gathered before continuing?","Did the coach stay in scope?","Was it documented?"] },
+    { title: "Modification — agreeable client", category: "Client Situations", difficulty: 1, objective: "Present a modified plan that keeps an injured client training safely.", setup: "Client has a mild shoulder impingement. They're open to whatever you suggest.", cues: ["Explain the why behind every modification","Connect to intake assessment and PAR-Q","Hold the same coaching standards for modified movements","Confirm the movement feels okay before adding load","'This is still a real workout — we're routing around the injury intelligently'"], debrief: ["Were all modifications explained?","Did the session feel complete?","Were coaching standards maintained?"] },
+    { title: "Modification — resistant client", category: "Client Situations", difficulty: 4, objective: "Hold the modification with a client who pushes back. Safety is non-negotiable.", setup: "Client has a documented knee issue. They insist they feel fine and want the original protocol.", cues: ["'I'm pulling this because I don't want to create a setback that sets your program back weeks'","Offer an equally challenging alternative immediately","Reference their goal: 'We can't get there if we're managing an injury flare-up'","Document and flag for Alex if they push further","You are the expert — hold that without being condescending"], debrief: ["Did the coach hold their position?","Was an alternative offered immediately?","Was it documented?"] },
+    { title: "Introducing a nutrition habit", category: "Habit & Lifestyle", difficulty: 2, objective: "Introduce a single nutrition habit from FUEL without overstating scope.", setup: "Client says they're eating well but their InBody data doesn't match.", cues: ["'We only set one habit goal at a time — 80%+ compliance for one, below 10% for two'","Ask questions first: 'Walk me through a typical day of eating'","Stay in scope: behavior, timing, awareness — not meal plans","MyFitnessPal: 'Log for 5 days — don't change anything yet'","Frame it as an experiment"], debrief: ["Was only one habit introduced?","Did the coach stay in scope?","Was The Lift App referenced?"] },
+    { title: "Sleep habits", category: "Habit & Lifestyle", difficulty: 2, objective: "Explore sleep as a training variable without being preachy.", setup: "Client mentions sleeping 5–6 hours. 'That's just life.'", cues: ["Sleep is part of the Fat Loss Pyramid — a legitimate training variable","Connect to InBody data: 'Chronic sleep restriction reduces recovery and elevates cortisol'","Ask permission: 'Can I share one thing that might actually move the needle?'","1-habit rule: one sleep habit only","'7 hours, 5 out of 7 nights, for 2 weeks — tracked in the app'"], debrief: ["Was sleep connected to a specific outcome?","Was one habit introduced?","Was there a measurable goal with a check-in date?"] },
+    { title: "Stress management habits", category: "Habit & Lifestyle", difficulty: 3, objective: "Acknowledge stress as a training variable without crossing into therapy.", setup: "Client mentions 'a lot going on at work.' They seem stressed.", cues: ["Stress management is part of the Fat Loss Pyramid — it's in scope","'I'm not going to pry — but I want to help you manage the part that affects your training'","'High stress elevates cortisol, which directly impacts recovery and body composition'","Suggest a low-barrier behavior: 5-minute walk, breathing practice, journaling in the app","Know your boundary: 'Have you talked to anyone about this?'"], debrief: ["Did the coach stay in lane?","Was the habit practical?","Was a referral offered when appropriate?"] },
+    { title: "Assigning a habit — 1-habit rule", category: "Habit & Lifestyle", difficulty: 2, objective: "Walk through the FUEL habit assignment process. One habit, measurable, with a check-in date.", setup: "End of session. Time to assign the FUEL habit for the next two weeks.", cues: ["'80%+ compliance for one habit, below 10% for two'","Choose one area and explain why it's the highest leverage move","Define it completely: execution, success, compliance rate, check-in date","'Message me in The Lift App if you hit friction'","Co-create it: 'Does this feel doable? What might get in the way?'"], debrief: ["Was only one habit assigned?","Were all five FUEL habit elements covered?","Was a specific check-in date set?"] },
+    { title: "Accountability and check-in structure", category: "Habit & Lifestyle", difficulty: 2, objective: "Build a real accountability structure with the client — not at them.", setup: "Client has agreed to a habit but historically hasn't followed through.", cues: ["'Monitor habits via messaging in The Lift App. Communicate often.'","Let them choose the format — whatever lowers the barrier","'If I don't hear from you by Thursday, I'm going to follow up'","Set the date out loud and confirm it in the app","'Honest and prompt communication' is one of the four requirements for success"], debrief: ["Was the structure built with the client?","Was a specific day, format, and channel confirmed?","Was the coach clear about their follow-up role?"] },
+    { title: "Answering questions — program rationale", category: "Client Situations", difficulty: 2, objective: "Explain why an exercise is in the program in plain language.", setup: "Client asks: 'Why are we doing so many single-leg exercises?'", cues: ["Connect to their intake assessment findings","Use an analogy: 'Building a stable base before we add load'","Tie it to their phase in the 90-day block","Invite follow-up: 'Does that make sense?'","If you don't know: 'Let me check with [primary coach] and get back to you today'"], debrief: ["Was assessment data or program phase referenced?","Was it explained without jargon?","Was the client satisfied?"] },
+    { title: "Answering questions — bad media info", category: "Client Situations", difficulty: 3, objective: "Correct misinformation without being dismissive.", setup: "Client says: 'I read that lifting weights makes you bulky — especially for women.'", cues: ["Don't mock the source","Validate: 'That's one of the most common concerns we hear'","FUEL hypertrophy explanation: 'Building muscle is the slowest-progressing goal without pharmaceutical assistance'","F3 Triad: body composition change requires a specific combination of programming and Fuel","Offer evidence and connect to their program"], debrief: ["Was the correction backed by reasoning?","Was FUEL or F3 framework used?","Did the client leave with a corrected understanding?"] },
+    { title: "Answering questions — bad assumptions", category: "Client Situations", difficulty: 3, objective: "Address an assumption-based question without making the client feel uninformed.", setup: "Client: 'I figure I should stop eating carbs after 6pm, right?'", cues: ["Honor the question: 'That's a really common belief'","FUEL fat loss pyramid: total calorie balance at the base — timing has minimal impact","'The reason people see results cutting late carbs is usually because they're cutting total calories'","Make it practical","Leave them feeling smarter, not corrected"], debrief: ["Was the correction kind and practical?","Was the FUEL fat loss pyramid referenced?","Did the client feel informed?"] },
+    { title: "Billing question", category: "Admin & Membership", difficulty: 1, objective: "Answer a billing question accurately without guessing.", setup: "Client asks why their statement shows a different amount.", cues: ["Don't guess — look it up in GymDesk","'Let me pull that up right now'","Common explanations: proration, biweekly vs. monthly, add-ons","If you can't resolve it: 'Let me get you an answer from [admin/Alex] today'"], debrief: ["Did the coach avoid guessing?","Was GymDesk referenced?","Was a resolution path established?"] },
+    { title: "Failed payment", category: "Admin & Membership", difficulty: 3, objective: "Notify a client of a failed payment cleanly.", setup: "A client's payment failed and you need to address it before their next session.", cues: ["'It looks like we need a new card on file'","Matter-of-fact, not accusatory: 'Easy to fix'","Two resolution paths: self-service in GymDesk or come in together","Don't make it a big deal unless it becomes a pattern"], debrief: ["Was the tone neutral?","Were two resolution options given?","Did the relationship stay intact?"] },
+    { title: "Membership freeze request", category: "Admin & Membership", difficulty: 2, objective: "Process the freeze cleanly, set a return date, seed continued engagement.", setup: "Client is traveling for work for 6 weeks and needs to freeze.", cues: ["Clarify: work trips = travel programming first","Freeze policy: illness, injury, family emergencies","'Do you want travel workouts for your time away?'","Confirm return date and schedule a welcome-back session","Document in GymDesk with auto-restart date"], debrief: ["Was travel programming offered first?","Was a return date confirmed?","Was the welcome-back session scheduled?"] },
+    { title: "Membership cancellation", category: "Admin & Membership", difficulty: 4, objective: "Have a real conversation before processing the cancel.", setup: "Client texts: 'I think I need to cancel.'", cues: ["Don't process immediately — ask to talk","'Is everything okay? I want to make sure we're solving the right problem'","Identify the real reason: money, time, progress, life event","Review buyout terms if mid-contract","If they still cancel: cleanly, no guilt, leave the door open"], debrief: ["Was a conversation had before processing?","Was the real reason identified?","Were buyout terms explained?"] },
+    { title: "No-shows", category: "Admin & Membership", difficulty: 3, objective: "Follow up after a no-show — check-in first, accountability second.", setup: "Client missed a session with no notice. Second time this month.", cues: ["'We didn't see you and we missed you'","Same-day contact","First contact = check-in: 'Everything okay?'","If second no-show: 'Is there something we can adjust?'","Document in The Lift App"], debrief: ["Was same-day contact made?","Was the first contact warm?","Was the pattern addressed at the right threshold?"] },
+    { title: "Referral ask", category: "Admin & Membership", difficulty: 2, objective: "Ask for a referral at a natural moment after a win.", setup: "Client just hit a milestone. They're pumped.", cues: ["Acknowledge the win fully first","'Do you know anyone who's been struggling with [same issue] and might be ready for this?'","'Just send them our way — I'll take care of the consult'","Keep it conversational","Close the loop with them if they refer someone"], debrief: ["Was the ask timed after a genuine win?","Was it natural?","Did the client feel celebrated first?"] },
+    { title: "Requesting a Google review", category: "Admin & Membership", difficulty: 2, objective: "Ask a satisfied client for a review naturally.", setup: "Client says 'This place has seriously changed things for me.'", cues: ["Respond genuinely — don't immediately pivot","'Would you ever be willing to share that on Google?'","Remove friction: 'I can text you the link right now'","Never guilt, never follow up more than once","NPS target is 8.5+"], debrief: ["Was the moment genuine before the ask?","Was the link sent before they left?","Was it low-pressure?"] },
+    { title: "Selling supplements", category: "Admin & Membership", difficulty: 3, objective: "Recommend a DotFit supplement that fills a real gap — not a blanket upsell.", setup: "Client asks: 'Should I be taking anything?'", cues: ["Ask about current intake and goals before recommending","'DotFit is FDA-regulated and NSF-certified for sport — almost all supplements aren't'","Recommend 1–2 max based on a real nutritional gap","'20% off as a member, +5% on recurring delivery'","Frame it as a bridge: 'This fills a gap until the habit is dialed in'"], debrief: ["Did the recommendation follow a question?","Was DotFit's regulatory distinction mentioned?","Was it framed as a gap-filler?"] },
+    { title: "Performance review", category: "Team & HR", difficulty: 3, objective: "Deliver a balanced performance review using the coach development framework.", setup: "Quarterly review for a coach with clear strengths and one development area.", cues: ["Lead with behavior-specific strengths","Use the six competency domains as structure","'Here's what I'm seeing, here's the impact, here's what I need in the next 90 days'","Connect to their goals and position on the coach ladder","End with a specific action plan tied to their 90-day development plan"], debrief: ["Was positive feedback behavior-specific?","Were the six competency domains used?","Was there a clear 90-day action plan?"] },
+    { title: "Critical feedback to a coach", category: "Team & HR", difficulty: 4, objective: "Address a specific performance issue directly with data and a clear standard.", setup: "A coach has been late to sessions three times.", cues: ["Facts first: 'This has happened three times'","Listen before solving","'Our clients notice. It affects trust and retention'","Set the standard explicitly with a check-in date","Document in the coach's 90-day development plan"], debrief: ["Was the feedback factual and specific?","Was the coach given a chance to explain?","Was a clear standard and check-in date established?"] },
+    { title: "Positive feedback to a coach", category: "Team & HR", difficulty: 1, objective: "Deliver specific positive feedback that reinforces a behavior you want to see more of.", setup: "A coach handled a difficult client situation perfectly.", cues: ["Name the specific behavior","State the impact: 'That client stayed and is still on track. That's retention.'","Tie it to the competency domain standard","Don't dilute it with a 'but'","Consider whether it belongs in a Level 10 all-hands as a team win"], debrief: ["Was the behavior named specifically?","Was the impact stated?","Was the positive delivered without a follow-on correction?"] },
+    { title: "Onboarding a new coach", category: "Team & HR", difficulty: 2, objective: "Walk a new hire through culture, expectations, tools, and their 90-day development path.", setup: "New coach starts Monday. Only worked at big box gyms.", cues: ["Start with culture, not paperwork","Name the non-negotiables: T3 Method, F3 Triad, WHWW, FUEL, The Lift App","Explain the coach ladder: five levels, six competency domains","Walk through the tools: GymDesk, Trainerize (The Lift App)","Assign their 90-day plan and set the first quarterly review date"], debrief: ["Was culture communicated before logistics?","Were the key frameworks named?","Was the 90-day plan assigned?"] },
+    { title: "Interviewing a coach candidate", category: "Team & HR", difficulty: 3, objective: "Run an interview that surfaces culture fit and coaching instincts.", setup: "Strong resume, two years at a busy gym. You've been burned before.", cues: ["Situational questions beat credentials: 'Tell me about a client who wasn't progressing. What did you do?'","Listen for client-first vs. ego-first language","'What's a competency you're actively working on?'","'How do you think about training and nutrition for a fat loss client?'","Make it two-way: sell The Lift genuinely"], debrief: ["Did the questions reveal culture fit?","Was self-awareness probed?","Did the candidate leave with a clear picture of The Lift?"] },
+  ],
+  fitness: [
+    { title: "Identifying a movement compensation", category: "Corrective Exercise", difficulty: 2, objective: "Use real-time observation and client feedback to identify a compensation pattern and name it clearly without alarming the client.", setup: "During a squat assessment, client's knees cave medially and heels rise slightly.", cues: ["Observe first, speak second — complete the rep before intervening","Name it plainly: 'Your knees are drifting inward and heels are coming up — common pattern and totally fixable'","Cross-reference with intake screen and PAR-Q","Use NASM CEx language internally, client language externally","Explain what the compensation means for their goal"], debrief: ["Was the compensation named without alarming the client?","Was it cross-referenced with intake data?","Was the explanation tied to the client's goal?"] },
+    { title: "Explaining a corrective exercise", category: "Corrective Exercise", difficulty: 2, objective: "Explain why a corrective exercise is in the warm-up in a way that earns buy-in.", setup: "Client is frustrated that they're doing 'just band work and foam rolling' at the start of every session.", cues: ["Validate: 'I get it — it doesn't feel like training. Here's why it matters for you specifically'","Connect to their compensation pattern from the intake screen","Explain the sequence: inhibit → activate → integrate under load","'As this improves, the corrective work gets shorter and eventually goes away'","'Most clients see a noticeable difference in 4–6 weeks'"], debrief: ["Was the corrective connected to their specific finding?","Was the inhibit-activate-integrate sequence explained?","Was a timeline given?"] },
+    { title: "Pain vs. discomfort — real-time triage", category: "Corrective Exercise", difficulty: 3, objective: "Distinguish between productive discomfort and potential pain mid-exercise and respond appropriately.", setup: "Client says 'I feel something in my knee' during a lunge.", cues: ["Stop the set: 'Is it sharp, dull ache, or burning?'","Ask location: 'Can you point to exactly where?'","Ask onset: 'Did it come on suddenly or build up?'","Sharp/pinching/sudden = stop and modify. Burning/fatigue = likely muscular, proceed with monitoring","Never let the client talk you into continuing through real pain — document and flag"], debrief: ["Was the right triage question asked first?","Was a clear decision made based on the answer?","Was it documented?"] },
+    { title: "Introducing inhibition work", category: "Corrective Exercise", difficulty: 2, objective: "Explain and execute foam rolling as part of the NASM CEx inhibit phase.", setup: "Client has tight hip flexors from the intake screen. They think foam rolling is 'just stretching.'", cues: ["'Foam rolling targets overactive muscles — ones doing too much work because others aren't doing enough'","Connect to their pattern: 'Your hip flexors are dominant, which limits your glute activation'","Technique: tender spot, hold 30–90 seconds, breathe through it","'If it's uncomfortable, you've found it. If it's sharp, ease off'","'After this we activate the muscles on the other side — then train the integrated pattern'"], debrief: ["Was the inhibit phase explained physiologically?","Was it connected to their specific compensation?","Was the technique cued clearly?"] },
+    { title: "Introducing activation work", category: "Corrective Exercise", difficulty: 2, objective: "Execute the activate phase and explain its role in bridging inhibition to integrated training.", setup: "After foam rolling, client is about to do banded clamshells. They ask 'what is this even doing?'", cues: ["'We just turned off the overactive muscles — now we're turning on the ones that have been underworking'","Name the target: 'This targets your glute medius — stabilizes your knee and hip alignment'","Cue quality over quantity: '15 reps is worthless if you're using your hip flexor'","Feedback question: 'Do you feel this in the outside of your glute or somewhere else?'","'When we get to squats, you should feel your glutes engage earlier — that's the win'"], debrief: ["Was the activation tied to the inhibition work?","Was the cue specific enough?","Was a feedback question used?"] },
+    { title: "Explaining a compensation to a skeptical client", category: "Corrective Exercise", difficulty: 3, objective: "Convince a skeptical client that their compensation pattern is real and worth addressing.", setup: "Client thinks corrective work is unnecessary. 'I've been moving this way my whole life and nothing has been wrong.'", cues: ["Validate: 'You're right that it hasn't caused a problem yet'","Car alignment analogy: 'You can drive on a misaligned car for years — it eventually causes a real problem'","Reference the intake screen data: 'Here's specifically what we saw'","Connect to their goal: 'Loading this pattern without addressing it will limit how far we can take you'","Frame as optimization, not injury prevention"], debrief: ["Was the skepticism validated before being addressed?","Was the car alignment analogy or similar used?","Was it framed as optimization?"] },
+    { title: "Progressing a corrective to a loaded pattern", category: "Corrective Exercise", difficulty: 3, objective: "Bridge a corrective exercise to its integrated, loaded version.", setup: "Client has been doing banded squats for 3 weeks to address knee valgus. Their pattern has improved significantly.", cues: ["Name what's changed: 'Your knee tracking has improved significantly'","'We're going to load it now — maintain that knee alignment under weight'","Start conservatively: bodyweight before adding load","'Everything you've built in the corrective work is in this movement — you just have to find it'","Set the regression anchor before the set"], debrief: ["Was the client told specifically what improved?","Was the progression explained as a continuum?","Was the regression anchor set?"] },
+    { title: "Encouraging more intensity — load", category: "Intensity & Loading", difficulty: 2, objective: "Push a client to add weight when they're capable of more but defaulting to comfort.", setup: "Client has been using the same dumbbell weight for 3 weeks. Form is solid.", cues: ["'On a scale of 1–10, how hard was that last set?'","'You haven't failed on this weight in 3 weeks. Your body has adapted'","Explain progressive overload: 'The body only changes in response to demands that challenge it'","Frame the increase as a test: 'Let's try 5 more pounds this set and see what happens'","'Your form is locked in — that's the green light to add load'"], debrief: ["Was the RPE question used?","Was progressive overload explained simply?","Was the increase framed as a test?"] },
+    { title: "Encouraging more intensity — reps", category: "Intensity & Loading", difficulty: 2, objective: "Push a client to complete the prescribed rep range rather than stopping short.", setup: "Client is prescribed 12 reps but consistently stops at 8–9.", cues: ["'What was your effort level when you put the weight down?'","'The last 3 reps are where most of the adaptation happens'","'The first 6–8 reps are just getting you to the starting line'","'This set — your goal is to hit 12. I'll be counting with you'","If they can't complete: useful data. If they can but won't — that's the conversation"], debrief: ["Was the importance of the last reps explained?","Was a clear expectation set before the next set?","Did the coach distinguish 'can't' from 'won't'?"] },
+    { title: "Explaining RPE", category: "Intensity & Loading", difficulty: 1, objective: "Teach a client how to use Rate of Perceived Exertion as a training tool.", setup: "Client keeps saying 'it was fine' after every set.", cues: ["'1 is sitting on the couch. 10 is the hardest thing you've ever done'","Anchors: '6 = could keep going. 8 = hard, 2–3 more reps. 9–10 = near max'","'I use your RPE to decide whether to add weight, keep the same, or dial back'","Ask it consistently after every set","Calibrate: 'You said 7 but that looked like a 5 — let's push harder next set'"], debrief: ["Were anchor points given?","Was RPE explained as a coaching tool?","Did the coach calibrate against what they observed?"] },
+    { title: "Encouraging time under tension", category: "Intensity & Loading", difficulty: 2, objective: "Teach a client to slow down their reps for more effective stimulus.", setup: "Client is breezing through Romanian deadlifts — lowering in under a second.", cues: ["'You're moving through that really quickly — the muscle barely has time to do any work'","'The lowering phase is where most of the muscle building happens'","Give a tempo: '3 seconds down, pause at the bottom, 1 second up'","Reduce the weight if needed","'This set — 3 count on the way down. I'll count with you for the first few reps'"], debrief: ["Was the value of the eccentric phase explained?","Was a specific tempo given?","Was weight reduction offered proactively?"] },
+    { title: "Encouraging greater range of motion", category: "Intensity & Loading", difficulty: 2, objective: "Coach a client to move through fuller range of motion when capable but defaulting to partial reps.", setup: "Client is doing goblet squats but consistently stopping at parallel or above.", cues: ["Confirm mobility first: 'Does it feel like tightness or just habit?'","If mobility is available: 'You have the range — I want you to use it'","'Partial reps build partial strength. Full range builds full function'","Cue: 'Drive your knees out and sit into it — your hips have more room than you think'","'Let's add 2 inches of depth this set and see how it feels'"], debrief: ["Was mobility confirmed before range was demanded?","Was the benefit of full ROM explained?","Was a specific cue given?"] },
+    { title: "Explaining the current training phase", category: "Programming & Vision", difficulty: 2, objective: "Explain what phase the client is in, what it's designed to accomplish, and why it looks the way it does.", setup: "Client is 5 weeks in and asks: 'We've been doing a lot of the same movements — when does it change?'", cues: ["Name the phase: 'You're in Phase 1 — Stabilization Endurance'","'We're building joint stability, movement quality, and work capacity before we add serious load'","Connect to their intake screen findings","Give a timeline: 'In 4–5 weeks we move into Phase 2 — load and intensity increase significantly'","'Everything you're doing now is making Phase 2 safer and more effective'"], debrief: ["Was the phase named and its purpose explained?","Was it connected to their intake findings?","Was a specific transition timeline given?"] },
+    { title: "Explaining the 90-day program arc", category: "Programming & Vision", difficulty: 2, objective: "Give a client a high-level view of the full 90-day plan.", setup: "New client, 2 weeks in, asks: 'What does the next few months actually look like?'", cues: ["Walk through the three phases: Stabilization → Strength Endurance → Hypertrophy/Max Strength","Connect each phase to their goal","Name the InBody check-in at 90 days","Explain why they can't skip to Phase 3","Leave them with a clear next milestone"], debrief: ["Were all three phases explained?","Was each phase connected to their goal?","Was the 90-day InBody check-in mentioned?"] },
+    { title: "Explaining exercise selection — 'why this exercise?'", category: "Programming & Vision", difficulty: 2, objective: "Answer a 'why this exercise?' question specifically, tied to assessment data and program phase.", setup: "Client asks: 'Why are we doing Bulgarian split squats instead of regular squats?'", cues: ["'Your assessment showed a difference between your left and right side — bilateral squats can mask that'","Connect to the phase: 'Unilateral work builds the single-leg stability that makes bilateral movements stronger'","'As the imbalance closes, the split squat work decreases. That's the goal'","Don't promise to remove it prematurely"], debrief: ["Was the exercise choice explained via assessment data?","Was the phase connection made?","Was the honest trade named?"] },
+    { title: "Explaining supersets and circuit structure", category: "Programming & Vision", difficulty: 1, objective: "Explain why a workout is structured as supersets rather than straight sets.", setup: "Client asks: 'Why do we always do two exercises back to back?'", cues: ["'We pair exercises that work different muscle groups — one rests while the other works'","Benefits: more work in less time, better conditioning, faster recovery","Connect to their goal","'You still get rest — it happens while the other exercise is working'","'We can do straight sets — it'll add 20–25 minutes. Is that the trade you want?'"], debrief: ["Was the pairing logic explained?","Were benefits tied to the client's goal?","Was the rest concern addressed?"] },
+    { title: "Explaining why not HIIT every day", category: "Client Education", difficulty: 2, objective: "Address a client who wants to add more high-intensity work.", setup: "Client says: 'Can I just do HIIT classes on my off days? More is more, right?'", cues: ["Validate: 'I love that you want to do more — let's make sure we're adding the right kind'","'HIIT is a high-stress stimulus. Stack too many and you're accumulating fatigue, not building fitness'","Cortisol: 'Chronic high-intensity work elevates cortisol and impairs body comp changes'","Alternative: 'Low-intensity steady state on off days accelerates recovery without adding to the stress load'","'More HIIT is often counterproductive for body composition goals'"], debrief: ["Was the recovery debt concept explained?","Was the cortisol mechanism named simply?","Was a specific alternative offered?"] },
+    { title: "Why this approach vs. CrossFit / Orange Theory", category: "Client Education", difficulty: 3, objective: "Explain The Lift's programming philosophy vs. high-intensity group fitness without trashing competitors.", setup: "Client says: 'My friend does CrossFit and loves it. Why wouldn't I just do that instead?'", cues: ["Don't trash CrossFit or OTF — ever","'The fundamental difference is individualization — those programs are designed for a group, ours is designed for you'","'High-intensity group formats have higher injury rates, particularly for people with movement limitations'","'Intensity built on a faulty foundation causes injury before it causes progress'","'Once your foundation is built, the intensity goes up significantly. We just build it in the right order'"], debrief: ["Were competitors treated with respect?","Was the individualization difference named?","Was the injury risk addressed without fear-mongering?"] },
+    { title: "Explaining warm-up rationale", category: "Client Education", difficulty: 1, objective: "Explain why the warm-up is structured the way it is.", setup: "Client shows up 10 minutes late: 'Can we just skip the warm-up?'", cues: ["Don't skip it — shorten it strategically if needed","'The warm-up activates the specific muscles we need today — it's not just heart rate'","'If we skip activation, your dominant muscles take over and you'll get less out of the main exercises'","Car analogy: 'You wouldn't floor a cold engine'","'We'll cut it to 5 minutes and hit the most important pieces'"], debrief: ["Was the warm-up's specific purpose explained?","Was a reasonable compromise offered?","Was the non-negotiable held?"] },
+    { title: "Explaining rest periods", category: "Client Education", difficulty: 1, objective: "Explain why prescribed rest periods matter.", setup: "Client keeps moving to the next set before the rest period is up.", cues: ["'Rest periods are part of the dose. Changing them changes what we're training for'","'Short rests train conditioning. Longer rests allow full recovery for strength work'","'If you rest 30 seconds instead of 90, your next set is a conditioning set, not a strength set'","Give them an active recovery job: mobility work or breathing","'I'll cue the rest period for you — your job is to trust the program'"], debrief: ["Were rest periods explained as part of the training dose?","Was the consequence of cutting rest named?","Was an active recovery alternative offered?"] },
+    { title: "Explaining muscle soreness", category: "Client Education", difficulty: 1, objective: "Distinguish between DOMS, productive soreness, and pain.", setup: "Client comes in sore from Tuesday's session and asks if they should train through it.", cues: ["'There's DOMS — peaks 24–48 hours after, normal response. Then there's joint pain — that's different'","'Soreness in the muscle belly after a hard session means the stimulus worked'","'Muscular soreness — train through it with a good warm-up. Joint pain or worsens with movement — we modify'","'The goal isn't to be sore — that's not the measure of a good workout'","'Where exactly and what does it feel like?' — before deciding anything"], debrief: ["Was DOMS distinguished from pain?","Was the decision framework given?","Was the 'soreness ≠ good workout' reframe used?"] },
+    { title: "Explaining deload week", category: "Client Education", difficulty: 2, objective: "Explain why a deload is programmed and head off the instinct to push through it.", setup: "Client's program calls for a deload week. They push back: 'I don't need a rest week.'", cues: ["'Deloads aren't for when you feel bad — they're for when you feel good. That's the point'","'The strength you're building gets consolidated during this week. Skipping it delays the adaptation'","'You don't benefit from a workout during the workout — you benefit during recovery. A deload is a macro-recovery window'","'You will not lose fitness in one lighter week — performance actually improves coming out of a deload'","'Deload means reduced volume or intensity — you're still training'"], debrief: ["Was the deload framed as proactive?","Was the adaptation window explained?","Was regression fear addressed with evidence?"] },
+    { title: "Lower back pain — training around it", category: "Common Limitations", difficulty: 3, objective: "Navigate lower back pain using intake data, real-time assessment, and smart modification.", setup: "Client reports lower back tightness at the start of a session that includes deadlifts and squats.", cues: ["'Is this your typical background tightness or is something different today?'","Reference the PAR-Q: 'You mentioned chronic lower back tightness — is this consistent or worse than usual?'","Assess in real time: unloaded hip hinge, look for pain provocation","Modify: reduce ROM, switch to glute-dominant movements with less spinal flexion, increase corrective activation","'If this is worsening or different from your normal pattern, I want you to get it checked'"], debrief: ["Was information gathered before any decision?","Was PAR-Q data referenced?","Were modifications tied to loading the target muscle?"] },
+    { title: "Knee pain — training around it", category: "Common Limitations", difficulty: 3, objective: "Triage knee pain, modify intelligently, and keep the client moving productively.", setup: "Client mentions knee discomfort on squatting. Had a partial meniscus tear 2 years ago in PAR-Q.", cues: ["Triage: location, onset, aggravating movements, history","'Is this the same knee and similar to what you've felt before?'","Modify: reduce depth on bilateral squats, shift to single-leg in pain-free range, load hip hinge instead","Knee valgus under load often drives anterior knee pain — corrective activation may resolve it","'If it's new, worsening, or different — get it looked at before we progress loading'"], debrief: ["Was triage done before modifying?","Were modifications specific to the knee's position in the kinetic chain?","Was medical referral offered when appropriate?"] },
+    { title: "Shoulder limitation — training around it", category: "Common Limitations", difficulty: 3, objective: "Work around a shoulder limitation confidently, keeping upper body training productive.", setup: "Client has a history of shoulder impingement in PAR-Q. They mention discomfort warming up.", cues: ["'Is this the same impingement from your intake or something new?'","Replace overhead pressing: neutral grip DB press, landmine press, or push-up variations","Prioritize rotator cuff activation: face pulls, band pull-aparts, external rotation work","'We're loading upper body in a position that doesn't compress the shoulder joint'","'The goal is to train the muscle, not the movement'"], debrief: ["Was triage done before modifying?","Were alternatives offered that still loaded the target?","Was the 'train the muscle, not the movement' framing used?"] },
+    { title: "Hip mobility limitation", category: "Common Limitations", difficulty: 2, objective: "Address restricted hip mobility limiting squat depth or hip hinge quality.", setup: "Client can't hit parallel in a squat without significant anterior pelvic tilt and heel rise.", cues: ["'Your hips are running out of room before your depth runs out — that's a mobility issue, not a strength issue'","Identify likely culprits from intake: hip flexor tightness, limited hip internal rotation, ankle dorsiflexion","Assign targeted corrective: 90/90 hip stretch, couch stretch, ankle mobilization","'Meaningful hip mobility improvement takes 6–12 weeks of consistent work'","'We can still squat productively at the depth you have — we just can't load the range you don't have yet'"], debrief: ["Was the mobility issue named specifically?","Were likely culprits identified from intake?","Was a realistic timeline given?"] },
+    { title: "Ankle mobility limitation", category: "Common Limitations", difficulty: 2, objective: "Explain how ankle dorsiflexion restriction is affecting squat and lunge patterns.", setup: "Client's heels rise on squats and they default to a very wide stance.", cues: ["Wall ankle test: 'See how your heel comes up before you hit the wall? That's limited dorsiflexion'","'When your ankle can't flex enough, your heel lifts — it's a chain reaction through the whole squat'","Add to warm-up: banded ankle mobilization, calf foam roll, heel-elevated goblet squat","'Ankle mobility is trainable — we'll put it in your app as a daily habit'","Interim: elevated heels on a plate or wedge until mobility improves"], debrief: ["Was the wall ankle test or equivalent used?","Was the kinetic chain impact explained?","Was a daily mobility habit assigned?"] },
+    { title: "Hypertension — training considerations", category: "Common Limitations", difficulty: 3, objective: "Modify training for a client with hypertension while keeping the session productive.", setup: "Client has high blood pressure, medically managed per PAR-Q. Today's session includes heavy compound lifts.", cues: ["Confirm medical clearance for resistance training","Avoid Valsalva: 'For you, I'm going to cue continuous breathing rather than breath-holding'","Monitor RPE more closely: 'I want you staying in the 6–7 range today'","Avoid acute BP spikes: heavy isometrics, high rep sets to failure, extreme breath-holding","'Exercise is one of the best long-term interventions for blood pressure — we just want to make sure the dose is right'"], debrief: ["Was medical clearance confirmed?","Was Valsalva avoidance addressed?","Was RPE used as a ceiling?"] },
+    { title: "Post-surgical client — setting expectations", category: "Common Limitations", difficulty: 4, objective: "Set accurate expectations for a post-surgical client about what training will look like and why patience is the strategy.", setup: "Client had a hip replacement 14 months ago. Cleared by their surgeon. They want to 'get back to normal' with unrealistic timeline expectations.", cues: ["'Getting back to full function is absolutely achievable — let's talk about what the path looks like'","Three phases: restore ROM and activation → build strength around the joint → load integrated patterns","'Post-surgical tissue remodeling takes 12–24 months even after clearance'","Connect to the CEx protocol: 'Our intake screen gave us a clear picture of what the joint can and can't do right now'","'The clients who are most patient in Phase 1 make the biggest gains in Phase 3'"], debrief: ["Were the three post-surgical phases explained?","Was a realistic timeline given?","Was the CEx protocol connected to their surgical history?"] },
+
+    { title: "FUEL consult — expectation setting", category: "Fuel Consultation", difficulty: 1, objective: "Open a 30-minute FUEL consult by framing the session clearly so the client knows what to expect and why it matters.", setup: "Client shows up to their first FUEL consult. They're not sure what it is or why it's separate from training.", cues: ["Use the script framing: 'We're going to walk through the main approach to your goal so we're both on the same page about the requirements for adaptation'","Name the four things you'll cover: questionnaire results, biggest area of opportunity, one goal, and accountability structure","'Sound good?' — get explicit agreement before moving forward","Keep it under 2 minutes — the framing should feel like a road map, not a preamble","If they ask why it's separate from training: 'Nutrition and lifestyle have as much impact on your results as the training does — this deserves its own focused time'"], debrief: ["Did the client know what to expect before the consult began?","Was agreement obtained before moving forward?","Was the framing brief and confident?"] },
+
+    { title: "FUEL consult — fat loss pyramid explanation", category: "Fuel Consultation", difficulty: 2, objective: "Explain the Fat Loss Pyramid to a fat loss client in a way that changes how they think about where their results come from.", setup: "Client has been focused on cardio for months and wonders why the scale isn't moving. Time to reframe.", cues: ["Show the Fat Loss Pyramid and walk through it bottom to top: Nutrition and BMR, NEAT, resistance training, sleep/stress, cardio","'Cardio has the smallest overall impact on fat loss — it's at the top of the pyramid, not the bottom'","Connect directly to their current approach: 'If cardio is your main tool, we're working with the least effective lever'","'This is why your programming looks the way it does — we're stacking the high-leverage tools first'","Don't dismiss cardio — frame it as a complement, not the foundation"], debrief: ["Was the pyramid explained bottom-to-top with the rationale for the order?","Was cardio contextualized without being dismissed?","Did the client leave with a new mental model for fat loss?"] },
+
+    { title: "FUEL consult — muscle/strength goal explanation", category: "Fuel Consultation", difficulty: 2, objective: "Explain the specific nutritional and recovery requirements for a client focused on strength or hypertrophy.", setup: "Client wants to get stronger and build muscle but has been under-eating and over-cardio-ing based on a fat loss mindset.", cues: ["'Building muscle is the slowest-progressing goal — and it has very specific requirements'","Calorie surplus: 'We need 150–200 calories more than you're burning every day. You can't build muscle out of nothing'","Protein target: '1.2–1.5 grams per pound of bodyweight — this is non-negotiable for the goal you have'","Training stimulus: 'We want the minimum effective dose of high-intensity work — enough to trigger protein synthesis, then rest and grow'","Recovery: 'Adaptation doesn't happen during the workout. It happens while you sleep. Rest is training'"], debrief: ["Were all three requirements (surplus, protein, recovery) explained?","Was the client's current approach connected to why progress has been limited?","Was the minimum effective dose concept explained?"] },
+
+    { title: "FUEL consult — reviewing questionnaire results", category: "Fuel Consultation", difficulty: 2, objective: "Walk through a client's pre-consult questionnaire and identify the highest-leverage area of opportunity without overwhelming them.", setup: "Client completed the FUEL questionnaire before the consult. Their sleep score is low, nutrition is moderate, and stress is high.", cues: ["Acknowledge what they're already doing well: 'Looking at your results, here's what's working in your favor'","Name the biggest opportunity clearly: 'I think our greatest area of opportunity is [X] because that's our biggest bang for the buck right now'","Explain the reasoning — don't just name it, justify why this one over the others","One area, not three: 'We have room for improvement in a few places, but I don't want to pile on — let's focus where it matters most'","Connect it forward to the goal-setting step: 'That's actually what I want our goal to be today'"], debrief: ["Was something positive acknowledged before the opportunity was named?","Was the reasoning for choosing that area explained?","Was only one area named as the priority?"] },
+
+    { title: "FUEL consult — goal setting (1-habit rule)", category: "Fuel Consultation", difficulty: 2, objective: "Walk through the five-part habit definition process and get full client agreement on one specific, measurable FUEL goal.", setup: "Client has identified sleep as their biggest gap. Now it's time to set a real, defined goal — not a vague intention.", cues: ["State the research: '80%+ compliance for one habit at a time. The moment a second goal is introduced, compliance for both drops below 10%'","Walk through all five elements: (1) What does execution look like, (2) What does success look like, (3) Required compliance rate, (4) Rate of progress goal, (5) When do we check in or pivot","Get agreement on each element individually — don't assume agreement on the whole","Make it specific and measurable: '7 hours of sleep, 5 out of 7 nights, for the next 2 weeks' — not 'sleep more'","'Does this feel doable? What might get in the way?' — co-create it, don't assign it"], debrief: ["Were all five habit elements defined?","Was client agreement obtained on each element?","Was it co-created rather than assigned?"] },
+
+    { title: "FUEL consult — introducing DotFit supplements", category: "Fuel Consultation", difficulty: 2, objective: "Introduce DotFit supplements as a bridge for a nutritional gap — only when appropriate, never as a default.", setup: "Client is struggling to hit protein targets. Their diet is solid but protein is consistently low. Supplementation makes sense here.", cues: ["Only introduce supplements after the habit goal is set — not instead of it","Lead with the gap: 'You're consistently under on protein, and that's limiting your recovery and your results'","DotFit credentialing: 'We partner with DotFit specifically because it's practitioner-grade, FDA-regulated, and NSF certified for sport — almost all supplements aren't'","Frame it as a bridge: 'This isn't a forever thing — it's a tool until we get the food habit dialed in'","Pricing: '20% off as a member, additional 5% off on recurring delivery'"], debrief: ["Was the supplement introduced after the habit, not instead of it?","Was DotFit's regulatory distinction explained?","Was it framed as a temporary gap-filler?"] },
+
+    { title: "FUEL consult — accountability and next steps", category: "Fuel Consultation", difficulty: 1, objective: "Close the FUEL consult with a clear accountability structure and an honest presentation of the Advanced Nutrition option.", setup: "Habit is set. Now close the consult with a clear path forward and an honest (not pushy) mention of the Advanced Nutrition add-on.", cues: ["From the script: 'We'll monitor habits via messaging in The Lift App. Communicate often. Let us know where you find friction'","Set the check-in date out loud and confirm it in the app before they leave","Present the Advanced Nutrition option honestly: '$69/month, no term commitment, weekly 15-minute check-in plus a monthly 30-minute consult'","Don't hard-sell it: 'If today felt useful and you want more of this, that's the path — if not, the app check-ins are what's included'","End with energy: 'You've got a clear target now. Let's make this the phase where the Fuel piece clicks'"], debrief: ["Was the accountability structure confirmed in the app?","Was the check-in date set before the client left?","Was Advanced Nutrition presented honestly, not sold?"] },
+
+    { title: "FUEL consult — sleep habits deep dive", category: "Fuel Consultation", difficulty: 2, objective: "Have a substantive conversation about sleep quality as a training variable, with specific, actionable habit recommendations.", setup: "Client is sleeping 5–6 hours and brushing it off as normal. Their InBody numbers and session energy tell a different story.", cues: ["From the Recovery Checklist: target 7–9 hours, consistent sleep/wake cycle, phone out of the bedroom, no screen use in bed","Connect to their specific results: 'Your recovery data and session energy suggest your body isn't getting what it needs to adapt'","Cortisol mechanism: 'Sleep deprivation elevates cortisol, which competes directly with the fat loss and muscle building you're working toward'","1-habit rule: pick one sleep behavior to change, not all of them","'This isn't about discipline — it's about setting up your environment so the right thing is also the easy thing'"], debrief: ["Was sleep connected to a specific training or body composition outcome?","Were specific sleep environment changes named?","Was one sleep habit chosen, not a full overhaul?"] },
+
+    { title: "FUEL consult — nutrition habits deep dive", category: "Fuel Consultation", difficulty: 2, objective: "Help a client understand their nutritional gaps using the questionnaire data and set one specific nutrition habit.", setup: "Client thinks they eat pretty well but can't identify their protein intake and skips breakfast most days.", cues: ["Ask questions before suggesting anything: 'Walk me through a typical day of eating — start from when you wake up'","Protein target from Recovery Checklist: '0.7–1 gram per pound of body weight is the optimal range for muscle growth and recovery'","Carb education: 'Despite what health magazines say, carbs are your body's preferred fuel — and for strength training, they're essential'","MyFitnessPal approach: 'Let's start by just logging for 5 days — 2 weekdays, 1 weekend — without changing anything. Let's see what's actually happening'","Stay in scope: behavior and awareness, not meal plans"], debrief: ["Was a food history taken before recommendations were made?","Were protein targets named specifically?","Was MyFitnessPal or app logging suggested as a starting point?"] },
+
+    { title: "FUEL consult — hydration habits", category: "Fuel Consultation", difficulty: 1, objective: "Address chronic dehydration as a performance and recovery limiter with specific, measurable targets.", setup: "Client never thinks about hydration and drinks mostly coffee and one water bottle a day. They report frequent headaches and afternoon energy crashes.", cues: ["From the Recovery Checklist: 'Half your body weight in ounces per day, minimum — up to a gallon'","Connect to their symptoms: 'Headaches and afternoon crashes are classic signs of dehydration, especially combined with training'","Electrolytes: 'Especially important during and after training — plain water isn't always enough if you're sweating consistently'","Practical structure: 'Set benchmarks — morning walk bottle, lunch bottle, training bottle — so it's scheduled, not dependent on thirst'","Creatine note if appropriate: 'Creatine requires consistent hydration to work properly — this habit unlocks other habits'"], debrief: ["Were specific daily targets given?","Was hydration connected to their reported symptoms?","Was a practical daily structure suggested?"] },
+
+    { title: "FUEL consult — stress management habits", category: "Fuel Consultation", difficulty: 3, objective: "Address stress as a physiological training variable with practical habit recommendations — without crossing into therapy.", setup: "Client scored high on the stress section of the questionnaire. They work 55+ hours a week, have poor sleep, and describe themselves as 'always wired but tired.'", cues: ["From the Recovery Checklist: 'High cortisol creates an unsafe environment for building muscle and losing fat — this isn't just about feeling better, it's about whether the program can work at all'","Name the options without prescribing: scheduled downtime, journaling, meditative practices, time in nature, time with loved ones, time alone","'Which of those actually sounds like something you'd do?' — let them choose","1-habit rule: one stress management behavior, not a wellness overhaul","Know the boundary: 'If this is bigger than what we can address here, I want to make sure you have support — have you talked to anyone?'"], debrief: ["Was stress framed as a physiological variable, not just a feelings issue?","Did the client choose the habit rather than being assigned it?","Was the scope-of-practice boundary held?"] },
+
+    { title: "FUEL consult — resistant client ('I eat fine')", category: "Fuel Consultation", difficulty: 3, objective: "Navigate a client who believes their nutrition is solid but whose results suggest otherwise — without being dismissive or confrontational.", setup: "Client's InBody shows minimal lean mass change despite 12 weeks of training. They insist they eat well. The questionnaire tells a different story.", cues: ["Don't challenge the belief directly — ask questions: 'Walk me through a typical day of eating from when you wake up'","Let the data do the talking: 'Your InBody is showing us that something in the recovery equation isn't adding up — let's figure out where the gap is'","Use curiosity, not correction: 'Interesting — how does that compare to a weekend day?'","Logging as discovery, not accountability: 'I'm not asking you to change anything yet — I just want to see what's actually happening so we're not guessing'","If they're right and they do eat well: 'Then the log will confirm that and we move to sleep and stress — there's always a lever somewhere'"], debrief: ["Was the challenge made through questions, not assertions?","Was logging framed as discovery rather than judgment?","Did the coach avoid being dismissive of the client's belief?"] },
+
+    { title: "90-day check-in — reviewing all progress data", category: "Athlete Check-In", difficulty: 2, objective: "Walk through the full F3 Triad progress review at 90 days — InBody, performance benchmarks, movement quality, pain scale, and FUEL metrics — and give the client a clear picture of where they are.", setup: "Client has completed their first 90-day block. You have InBody data, session notes, and habit tracking to review. They're anxious about the numbers.", cues: ["Frame it before diving in: 'We're going to look at all three dimensions — Form, Function, and Fuel — so we get the full picture, not just the scale'","Form first: InBody comparison — lean mass, body fat %, weight. Name what changed and what it means","Function second: performance benchmarks, movement quality improvements, pain scale trend. 'Your strength is up, your movement pattern has improved — here's the evidence'","Fuel third: habit compliance, sleep, nutrition trends — connect to the body comp results","If numbers are disappointing: lead with what improved before addressing what didn't. Use the data to find the real variable"], debrief: ["Were all three F3 Triad dimensions reviewed?","Was data used to tell a story, not just reported as numbers?","Was the client's emotional reaction to the data acknowledged?"] },
+
+    { title: "90-day check-in — strong progress, raising the bar", category: "Athlete Check-In", difficulty: 1, objective: "Celebrate genuine progress and use the momentum to set more ambitious goals for the next 90-day block.", setup: "Client has had an excellent first 90 days. InBody shows meaningful change, performance is up, habits are solid. They're expecting praise — give it, then push.", cues: ["Name the specific wins: 'You lost X lbs of fat, gained X lbs of lean mass, and your movement quality is measurably better — that's a real 90 days'","Connect it to their deepest goal: 'Remember why you came in — this is what that looks like in the data'","Then raise the bar: 'You've earned the right to a harder goal. Here's what I think is possible in the next 90 days'","Phase progression: explain what Phase 2 or 3 looks like and why they're ready for it","From the Phase Progress Report template: cover Form, Function, and Fuel goals for the next block specifically"], debrief: ["Were the wins named specifically with data?","Was the win connected to their original goal?","Was a more ambitious target set for the next block?"] },
+
+    { title: "90-day check-in — disappointing results conversation", category: "Athlete Check-In", difficulty: 4, objective: "Handle a check-in where the data doesn't match the effort — find the real variable without making the client feel like a failure.", setup: "Client trained consistently but InBody shows minimal change. They look deflated before you've said a word.", cues: ["Acknowledge the emotion first: 'I can see you were hoping for more — let's figure out what the data is actually telling us before we draw conclusions'","Use the F3 Triad as the diagnostic: 'The training was there. So if Form didn't shift the way we expected, we need to look at Function and Fuel'","Pull the habit tracking and session compliance — be specific, not vague","Name the most likely variable without making it an accusation: 'Sleep and nutrition compliance were inconsistent in weeks 6–10 — that's the window where adaptation usually consolidates'","Reframe: 'This check-in is the most useful one you'll have — we now know exactly what to address in the next block'"], debrief: ["Was the emotional reaction acknowledged before the data was analyzed?","Was the F3 Triad used as the diagnostic framework?","Did the client leave with a clear explanation and a path forward?"] },
+
+    { title: "90-day check-in — pivoting the goal", category: "Athlete Check-In", difficulty: 3, objective: "Navigate a goal pivot mid-program — either because the client's priorities have changed or because the data suggests a different focus is needed.", setup: "Client came in wanting fat loss. At 90 days, the data shows she's lost minimal fat but gained significant strength and feels better than she has in years. She's now questioning whether fat loss is actually what she wants.", cues: ["Don't rush to redirect — let her talk: 'Tell me more about that. What's changed for you?'","From the Phase Progress Report: 'If you would like to adjust your ultimate goal, let me know so we can set new benchmarks and change the trajectory of your training program'","Validate the pivot: 'Changing your goal based on how you feel and what the data shows is exactly the right move — that's not giving up, that's getting smarter'","Redefine the goal with the same five-part structure: execution, success, compliance, rate of progress, check-in date","Update the program in writing: 'I'll adjust your programming to reflect this and walk you through the changes at your next session'"], debrief: ["Was the pivot explored through questions before being acted on?","Was the five-part goal structure used to define the new direction?","Was the program adjustment documented and communicated?"] },
+
+    { title: "90-day check-in — pivoting habit or rate of progress", category: "Athlete Check-In", difficulty: 2, objective: "Adjust a habit goal or rate of progress target based on 90 days of real data — either because it was too aggressive, not aggressive enough, or no longer the right lever.", setup: "Client's protein habit was set at 120g/day. After 90 days, they're averaging 85g and feel like they're constantly failing. The habit needs to be recalibrated, not abandoned.", cues: ["Lead with empathy, not analysis: 'You've been showing up — the habit just isn't calibrated to your real life yet'","Use the data: 'You're averaging 85g. That's not failure — that's a starting point we didn't have 90 days ago'","Pivot the target to something achievable: '90g as the new floor. Let's make that a win before we push to 120'","Reconnect to the five habit elements: redefine success, compliance rate, and check-in date with the new number","Name the principle: 'A habit you hit 90% of the time at a lower target is worth more than a habit you hit 30% of the time at the right one'"], debrief: ["Was the gap between target and actual addressed without blame?","Was the habit recalibrated using the five-part structure?","Was the principle of achievable compliance explained?"] },
+
+    { title: "90-day check-in — managing expectations and setbacks", category: "Athlete Check-In", difficulty: 4, objective: "Address a client who has experienced a significant setback during the 90-day block — injury, illness, life event — and help them reframe it without losing momentum.", setup: "Client had a solid first 6 weeks, then a family crisis consumed weeks 7–10. They've barely trained and they're embarrassed. They expect you to be disappointed.", cues: ["Lead with care, not data: 'First — how are you doing? The program is the program, but you come first'","Name the reality honestly: 'A 10-week block with 6 strong weeks and 4 hard weeks is still a block with 6 strong weeks in it'","Pull what data exists and celebrate it: 'Here's what you built before the disruption — that doesn't disappear'","Reframe the expectation: 'Progress isn't linear. A setback in one block teaches us something about the next one'","Set the next block with the disruption accounted for: 'What would need to be true about the next 90 days for you to feel good about it?'"], debrief: ["Was care expressed before the program was discussed?","Was progress from the first half of the block acknowledged?","Did the client leave with a reframed expectation and a clear next step?"] },
+
+    { title: "90-day check-in — goal setting for next block", category: "Athlete Check-In", difficulty: 2, objective: "Use the Phase Progress Report structure to set clear F3 Triad goals for the next 90-day block with rationale, progress markers, and program changes.", setup: "Check-in is wrapping up. Client has a clear picture of where they are. Time to define where they're going next.", cues: ["Use the Phase Progress Report structure: set Form, Function, and Fuel goals for the next block specifically","For each goal: name it, explain why you chose it, define the progress markers, and explain the benefit","Connect each goal back to their ultimate objective: 'Here's why this matters for [their deepest goal]'","Name the program changes you're making: 'I've updated your programming to reflect these goals — I'll walk you through the changes at your next session'","Set the next check-in date before they leave: 'We'll reconvene at 90 days — sooner if you want to touch base on the habit progress'"], debrief: ["Were goals set across all three F3 dimensions?","Was the rationale for each goal explained?","Were specific program changes named and a next check-in date confirmed?"] },
+
+    { title: "Athlete check-in — pain scale conversation", category: "Athlete Check-In", difficulty: 3, objective: "Have a direct conversation about a client's pain scale trend — either worsening, not improving, or a new issue — and respond appropriately.", setup: "Client has been rating lower back discomfort at 4–5/10 consistently across the last 6 weeks. It's not getting worse, but it's not getting better either.", cues: ["Pull the pain scale data across the last 6 weeks and show it: 'This is what I'm seeing — a consistent 4–5 that hasn't moved in either direction'","Don't normalize it: 'We don't want to just train around a chronic 4 indefinitely — let's talk about what might be driving this'","F3 Triad diagnostic: is it a training variable (load, volume, movement quality), a Fuel variable (sleep, stress, recovery), or something that needs outside eyes?","From the intake script: stay in scope. 'I want to make sure we're not missing something that needs a medical perspective — have you talked to your doctor about this?'","Adjust the program based on what you find and document the change"], debrief: ["Was the pain trend shown with data?","Was the persistent pain challenged rather than normalized?","Was a medical referral offered when appropriate?"] },
+
+    { title: "Athlete check-in — performance benchmark review", category: "Athlete Check-In", difficulty: 2, objective: "Walk through specific performance benchmarks with a client and connect the numbers to meaningful progress in their program and daily life.", setup: "Client's 90-day check-in shows strength improvements across all major movements but they don't understand why those numbers matter for their goals.", cues: ["Name the specific numbers: 'Your goblet squat is up 30 lbs, your hip hinge pattern is clean at a load that wasn't possible 90 days ago'","Connect performance to goal: 'More strength means more muscle, more muscle means a higher resting metabolism — that's how strength training accelerates fat loss'","Connect to daily life: 'You're stronger than you were 90 days ago — what does that feel like outside the gym?'","Movement quality: 'The pain scale trend and your compensation patterns have both improved — that's the corrective work paying off'","Name what's next: 'In Phase 2, these numbers become our floor and we build from here'"], debrief: ["Were specific numbers named, not just general progress?","Were performance improvements connected to the client's goal?","Was the connection to daily function made?"] },
+
+    { title: "More frequent check-in — coach-initiated", category: "Athlete Check-In", difficulty: 2, objective: "Initiate an off-cycle check-in because the data or behavior pattern warrants it — before the client asks.", setup: "Client's habit tracking in The Lift App has gone quiet for 3 weeks. Their session energy is visibly lower. You don't wait for the 90-day mark.", cues: ["Lead with care: 'I wanted to check in with you outside of our normal schedule — I've noticed a few things I want to make sure we're staying ahead of'","Name what you observed specifically: 'Habit tracking has been quiet, your session energy has shifted — what's going on?'","Don't wait for a crisis to initiate: this is proactive coaching, not reactive management","If something significant has happened: 'Is there anything that's changed in your life that we should factor into the program right now?'","Offer a formal check-in if needed: 'Do you want to schedule a proper check-in before the 90 days? I think it would be useful'"], debrief: ["Was the check-in proactive, not reactive?","Were specific behavioral signals named?","Was a formal check-in offered if appropriate?"] },
+  ]
+};
+
+const COLORS = {
+  sales: ['#5490C1','#3B6D9E','#2A5480','#7BADD4','#1C3F63','#4D7DB8','#6094C8','#264F76','#3A6899','#8FB8DC'],
+  coaching: ['#2D9E75','#1A7A57','#138050','#45B589','#0D5E3C','#3AAB80','#23956B','#106648','#2C8E69','#55C497'],
+  fitness: ['#7F77DD','#534AB7','#3C3489','#AFA9EC','#26215C','#6B63D4','#9189E5','#453E9E','#CEC8F5','#2F2875'],
+  program: ['#D85A30','#993C1D','#712B13','#F0997B','#4A1B0C','#C04F26','#E87055','#852F14','#F5C4B3','#3A1008']
+};
+
+const state = {
+  sales: { spinning: false, angle: 0, currentScenario: null, currentIndex: -1 },
+  coaching: { spinning: false, angle: 0, currentScenario: null, currentIndex: -1 },
+  fitness: { spinning: false, angle: 0, currentScenario: null, currentIndex: -1 },
+  program: { spinning: false, angle: 0, currentScenario: null, currentIndex: -1 }
+};
+
+// Program scenarios defined separately for cleanliness
+SCENARIOS.program = [
+  { title: "Classic fat loss — 3x The Lift", category: "Fat Loss", difficulty: 1, objective: "Design a Phase 1 fat loss program for a straightforward client with no significant limitations training exclusively at The Lift 3x/week.", setup: "New client, fat loss goal, no injuries, average movement quality from intake screen, beginner-intermediate fitness level. Clean slate.", venueLabel: "3x/wk The Lift", days: 3 },
+  { title: "Fat loss with knee limitation", category: "Fat Loss", difficulty: 2, objective: "Design a fat loss program that achieves high metabolic demand while protecting a client with documented knee OA or chondromalacia.", setup: "Client wants fat loss. Knee OA limits squatting depth and impact. Must maintain intensity without loading the knee into provocation.", venueLabel: "3x/wk The Lift", days: 3 },
+  { title: "Fat loss — split venue 1+2", category: "Fat Loss", difficulty: 2, objective: "Design a 3-day fat loss program with 1 coached session at The Lift and 2 home sessions. Equipment at home is limited.", setup: "Client can only get to The Lift once a week. Has TRX, a few dumbbells, and a kettlebell at home. Fat loss is the goal.", venueLabel: "1x/wk The Lift + 2x/wk spartan home gym", days: 3 },
+  { title: "Fat loss — high frequency, low impact", category: "Fat Loss", difficulty: 3, objective: "Design a 5-day fat loss program for a client who wants to train frequently but has joint sensitivity across multiple sites.", setup: "Client is enthusiastic, wants to train 5 days a week, but has bilateral knee issues, low back history, and mild shoulder impingement. Must manage total load carefully.", venueLabel: "2x/wk The Lift + 3x/wk apartment gym", days: 5 },
+  { title: "Fat loss — post-partum return", category: "Fat Loss", difficulty: 3, objective: "Design a fat loss program appropriate for a client returning to training 6 months post-partum. Core and pelvic floor considerations are primary.", setup: "Client is 6 months post-partum, medically cleared. Core is weak, pelvic floor needs careful loading progression. Fat loss goal with urgency to feel herself again.", venueLabel: "3x/wk The Lift", days: 3 },
+  { title: "Fat loss — over 60, osteopenia", category: "Fat Loss", difficulty: 4, objective: "Design a fat loss and bone density program for a client over 60 with osteopenia.", setup: "Client is 63, osteopenia diagnosed, never trained with weights. Doctor recommended resistance training. Fat loss is secondary to function and bone health.", venueLabel: "3x/wk The Lift", days: 3 },
+
+  { title: "Hypertrophy — clean slate, full equipment", category: "Muscle & Strength", difficulty: 1, objective: "Design a straightforward 3-day hypertrophy program for a beginner-intermediate client with full equipment and no limitations.", setup: "Client is new to structured training, motivated, no injuries, good health. Muscle building is the goal. Full access to The Lift. No complications.", venueLabel: "3x/wk The Lift", days: 3 },
+  { title: "Strength focus — robust home gym", category: "Muscle & Strength", difficulty: 1, objective: "Design a strength program for a client with an excellent home gym — squat rack, barbell, cables, full dumbbells. No complications.", setup: "Client has a fully-equipped home gym. Wants to get stronger. Intermediate lifter with good movement quality. Trains 4 days/week. Clean slate.", venueLabel: "4x/wk robust home gym", days: 4 },
+  { title: "Hypertrophy — 4-day split, commercial gym", category: "Muscle & Strength", difficulty: 2, objective: "Design a 4-day hypertrophy split for an intermediate client with full commercial gym access.", setup: "Client is intermediate, good movement quality, muscle building is the goal. Trains 4 days/week at a commercial gym. Wants a push/pull or upper/lower split.", venueLabel: "4x/wk commercial gym", days: 4 },
+  { title: "Strength + The Lift hybrid", category: "Muscle & Strength", difficulty: 2, objective: "Design a 4-day program split between 2 coached sessions at The Lift and 2 independent commercial gym sessions.", setup: "Client wants to build strength and muscle. Trained independently for 2 years before joining The Lift. Wants to continue training at a commercial gym on off-days.", venueLabel: "2x/wk The Lift + 2x/wk commercial gym", days: 4 },
+  { title: "Muscle building — minimal equipment", category: "Muscle & Strength", difficulty: 3, objective: "Design a hypertrophy program that achieves meaningful muscle stimulus with very limited equipment.", setup: "Client trains at home with only a TRX, two kettlebells (16kg and 24kg), and a pull-up bar. Wants to build muscle. Progressive overload requires creativity.", venueLabel: "3x/wk spartan home gym", days: 3 },
+  { title: "Muscle building — 6-day program", category: "Muscle & Strength", difficulty: 3, objective: "Design a 6-day program for a highly motivated client with a hypertrophy goal and good recovery capacity.", setup: "Client is motivated, intermediate lifter, fat loss has stabilized, now wants to add lean mass. Has access to both The Lift and a commercial gym. Trains 6 days/week.", venueLabel: "3x/wk The Lift + 3x/wk commercial gym", days: 6 },
+  { title: "Hypertrophy — post-surgical shoulder", category: "Muscle & Strength", difficulty: 4, objective: "Design a hypertrophy program for a client 8 months post rotator cuff repair. Overhead and heavy horizontal pressing are off the table.", setup: "Client is cleared for light training but cannot do overhead pressing or heavy horizontal pressing. Wants to build muscle everywhere possible while the shoulder continues to heal.", venueLabel: "3x/wk The Lift", days: 3 },
+
+  { title: "Athletic performance — fitness baseline", category: "Performance & Athletic", difficulty: 1, objective: "Design a foundational athletic performance program for a recreationally active client who wants to move and feel more athletic.", setup: "Client is active but untrained. Plays recreational sports occasionally, wants to feel more athletic and build a base. Good health, no injuries, no specific sport demands.", venueLabel: "3x/wk The Lift", days: 3 },
+  { title: "Golf performance program", category: "Performance & Athletic", difficulty: 2, objective: "Design a golf-specific training program focused on rotational power, hip mobility, and injury prevention.", setup: "Client is a serious recreational golfer playing 2x/week. Wants to add distance and reduce lower back pain after rounds. Trains at The Lift twice a week.", venueLabel: "2x/wk The Lift", days: 2 },
+  { title: "Athletic performance — in-season maintenance", category: "Performance & Athletic", difficulty: 3, objective: "Design a 2-day in-season maintenance program that keeps a recreational athlete strong without interfering with their sport.", setup: "Client plays recreational soccer 2x/week in a league. Wants to maintain strength and reduce injury risk during the season without accumulating too much fatigue.", venueLabel: "2x/wk The Lift", days: 2 },
+  { title: "Athletic performance — off-season build", category: "Performance & Athletic", difficulty: 3, objective: "Design an off-season athletic performance program focused on power, strength, and movement quality.", setup: "Client is a former college baseball athlete, now 38, plays in a recreational league. Off-season. Wants to be noticeably more athletic when the season starts. High movement competency.", venueLabel: "4x/wk The Lift + commercial gym", days: 4 },
+  { title: "Speed and power — hotel gym only", category: "Performance & Athletic", difficulty: 4, objective: "Design a speed and power maintenance program for a traveling athlete limited to hotel gym equipment.", setup: "Client travels 2-3 weeks per month for work. Wants to maintain athletic performance during travel. Only hotel gyms available — cables, light dumbbells, cardio machines, limited space.", venueLabel: "4x/wk hotel gym", days: 4 },
+
+  { title: "Corrective — minor compensations, motivated client", category: "Corrective & Rehab", difficulty: 1, objective: "Design a Phase 1 program for a client with mild movement compensations who is motivated and responsive to coaching.", setup: "Client has minor anterior pelvic tilt and slight knee valgus on intake screen. Movement is compensated but functional. Client is coachable and curious about the corrective work.", venueLabel: "3x/wk The Lift", days: 3 },
+  { title: "Corrective — moderate dysfunction, split venue", category: "Corrective & Rehab", difficulty: 2, objective: "Design a corrective-first program for a client with moderate movement dysfunction who trains at The Lift twice a week plus one home session.", setup: "Client has moderate hip flexor dominance and poor glute activation. Trains at The Lift 2x/week, has limited equipment at home 1x/week. Corrective work must transfer to home sessions.", venueLabel: "2x/wk The Lift + 1x/wk home", days: 3 },
+  { title: "Corrective-first — significant movement dysfunction", category: "Corrective & Rehab", difficulty: 3, objective: "Design a Phase 1 program dominated by corrective exercise because movement quality is too poor to load primary patterns safely.", setup: "Client intake screen shows significant anterior pelvic tilt, bilateral knee valgus, and limited shoulder flexion. Cannot load squat or hinge patterns cleanly. Movement quality must precede load.", venueLabel: "3x/wk The Lift", days: 3 },
+  { title: "Chronic low back — deload and rebuild", category: "Corrective & Rehab", difficulty: 3, objective: "Design a program for a client with recurring lower back pain who needs posterior chain strength without triggering a flare.", setup: "Client has had 3 acute low back episodes in 2 years. Currently symptom-free but cautious. Standard deadlift variations are off the table. Core stability and posterior chain are the priority.", venueLabel: "3x/wk The Lift", days: 3 },
+  { title: "Post-surgical return — total knee replacement", category: "Corrective & Rehab", difficulty: 4, objective: "Design a progressive return-to-training program for a client 5 months post total knee replacement, cleared by surgeon.", setup: "Client had a TKR 5 months ago. PT is complete. Quad strength significantly reduced on surgical side. Balance and proprioception are limited. Fat loss is a secondary goal.", venueLabel: "3x/wk The Lift", days: 3 },
+  { title: "Post-partum — diastasis recti", category: "Corrective & Rehab", difficulty: 4, objective: "Design a return-to-training program for a client with diastasis recti, 9 months post-partum, medically cleared.", setup: "Client has a 2-finger diastasis recti. Cleared by pelvic floor PT. Must avoid intra-abdominal pressure spikes while building core and total body strength progressively.", venueLabel: "3x/wk The Lift", days: 3 },
+
+  { title: "Beginner — clean slate, full equipment", category: "Special Populations", difficulty: 1, objective: "Design a beginner 3-day full-body program for a client with no training history and full access to The Lift.", setup: "True beginner, never trained with weights. Fat loss goal. Good health, no injuries, no limitations. Needs a structured starting point they can execute confidently.", venueLabel: "3x/wk The Lift", days: 3 },
+  { title: "Older adult — functional fitness", category: "Special Populations", difficulty: 2, objective: "Design a functional fitness program for a client in their late 60s focused on independence, mobility, and fall prevention.", setup: "Client is 67, retired, generally healthy, mild osteoarthritis in both hips. Goal is to stay active and maintain independence. Has never trained with weights.", venueLabel: "3x/wk The Lift", days: 3 },
+  { title: "Beginner — bodyweight only, no equipment", category: "Special Populations", difficulty: 2, objective: "Design a beginner 3-day full-body program using only bodyweight for a client with no equipment and no gym access.", setup: "True beginner, no gym membership, no equipment, no budget for either. Fat loss goal. Lives in an apartment. Needs visible early results to stay motivated.", venueLabel: "3x/wk no equipment / outdoors", days: 3 },
+  { title: "Type 2 diabetes management", category: "Special Populations", difficulty: 3, objective: "Design a program accounting for blood glucose management alongside a fat loss goal.", setup: "Client has Type 2 diabetes managed with Metformin. Doctor has explicitly recommended resistance training. Fat loss goal. Blood glucose monitoring is part of their daily routine.", venueLabel: "3x/wk The Lift", days: 3 },
+  { title: "Hypertension — load and intensity management", category: "Special Populations", difficulty: 3, objective: "Design a strength and fat loss program for a client with hypertension that manages acute blood pressure spikes.", setup: "Client has hypertension (145/95, not yet medicated). Doctor wants lifestyle change before medication. Resistance training is indicated but Valsalva and maximal isometric work must be avoided.", venueLabel: "3x/wk The Lift", days: 3 },
+  { title: "Older adult — multiple comorbidities", category: "Special Populations", difficulty: 4, objective: "Design a safe, effective program for a client over 65 managing knee/hip OA, hypertension, and Type 2 diabetes simultaneously.", setup: "Client is 68, has bilateral knee and hip OA, medicated hypertension, and Type 2 diabetes. Wants to lose weight and stay functional. Multiple constraints must be balanced simultaneously.", venueLabel: "3x/wk The Lift", days: 3 },
+
+  { title: "Remote client — apartment gym", category: "Travel & Remote", difficulty: 1, objective: "Design a 3-day program for a remote client with a typical apartment gym — cables, bench, dumbbells to 50 lbs, cardio. No complications.", setup: "Client trains remotely, no access to The Lift. Apartment gym is well-equipped for a standard program. Fat loss with muscle preservation goal. No injuries or significant limitations.", venueLabel: "3x/wk apartment gym", days: 3 },
+  { title: "Frequent traveler — 2-day minimum", category: "Travel & Remote", difficulty: 2, objective: "Design a travel-proof 2-day program for a client who can only guarantee 2 training days per week.", setup: "Client travels heavily for work. Can guarantee 2 training days per week. Venue varies — sometimes hotel gym, sometimes minimal space. Needs a program that works everywhere.", venueLabel: "2x/wk any available venue", days: 2 },
+  { title: "Full travel program — hotel and cruise ship", category: "Travel & Remote", difficulty: 3, objective: "Design a strength maintenance and fat loss program for a client who splits time between home, hotel gyms, and cruise ships.", setup: "Client is at home 2 weeks/month, hotel gym 1-2 weeks, and takes 2-3 cruises per year. Needs a program that holds up across all three environments with minimal modification.", venueLabel: "2x/wk The Lift + hotel gym + cruise ship gym", days: 4 },
+  { title: "No gym — outdoor training only", category: "Travel & Remote", difficulty: 3, objective: "Design a full training program for a client who trains exclusively outdoors in all weather.", setup: "Client lives near trails and a park with pull-up bars and benches. Wants to train outdoors exclusively, 4 days/week. Must account for Pacific Northwest weather variability.", venueLabel: "4x/wk outdoors only", days: 4 },
+  { title: "Travel athlete — spartan equipment, performance goal", category: "Travel & Remote", difficulty: 4, objective: "Design a performance-focused program for a traveling former athlete with only spartan equipment available.", setup: "Client is a former athlete, highly motivated, wants to maintain strength and athletic performance. Travels 3 weeks/month. Has a TRX plus minimal hotel gym equipment. Performance — not just maintenance — is the goal.", venueLabel: "4x/wk spartan/hotel gym", days: 4 },
+];
+
+function getFiltered(type) {
+  let items = SCENARIOS[type];
+  const catFilter = document.getElementById(type+'-filter').value;
+  if (catFilter !== 'all') items = items.filter(s => s.category === catFilter);
+  if (type === 'program') {
+    const diffEl = document.getElementById('program-difficulty-filter');
+    const daysEl = document.getElementById('program-days-filter');
+    const diffFilter = diffEl ? diffEl.value : 'all';
+    const daysFilter = daysEl ? daysEl.value : 'all';
+    if (diffFilter !== 'all') items = items.filter(s => s.difficulty === parseInt(diffFilter));
+    if (daysFilter !== 'all') items = items.filter(s => s.days === parseInt(daysFilter));
+  }
+  return items;
+}
+
+function drawWheel(type, highlightIndex) {
+  const canvas = document.getElementById('canvas-'+type);
+  const ctx = canvas.getContext('2d');
+  const items = getFiltered(type);
+  const n = items.length;
+  const cx = 140, cy = 140, r = 132;
+  const arc = (2*Math.PI)/n;
+  ctx.clearRect(0, 0, 280, 280);
+  for (let i = 0; i < n; i++) {
+    const start = state[type].angle + i*arc;
+    ctx.beginPath(); ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, start+arc); ctx.closePath();
+    const isHL = (highlightIndex !== undefined && i === highlightIndex);
+    ctx.fillStyle = isHL ? '#fff' : COLORS[type][i % COLORS[type].length];
+    ctx.fill();
+    if (isHL) {
+      ctx.strokeStyle = COLORS[type][i % COLORS[type].length];
+      ctx.lineWidth = 3; ctx.stroke();
+    }
+    ctx.save(); ctx.translate(cx, cy); ctx.rotate(start+arc/2);
+    ctx.textAlign = 'right';
+    ctx.fillStyle = isHL ? COLORS[type][i % COLORS[type].length] : '#fff';
+    ctx.font = `${isHL ? '700' : '500'} 10px -apple-system, sans-serif`;
+    const label = items[i].title.length > 22 ? items[i].title.slice(0,20)+'…' : items[i].title;
+    ctx.fillText(label, r-8, 4); ctx.restore();
+  }
+  ctx.beginPath(); ctx.arc(cx, cy, 20, 0, 2*Math.PI);
+  ctx.fillStyle = '#fff'; ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.15)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = '#888'; ctx.font = '500 9px -apple-system, sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText('SPIN', cx, cy+3);
+  ctx.beginPath(); ctx.moveTo(cx+r+5, cy);
+  ctx.lineTo(cx+r-12, cy-8); ctx.lineTo(cx+r-12, cy+8);
+  ctx.closePath(); ctx.fillStyle = '#e24b4a'; ctx.fill();
+}
+
+function buildList(type) {
+  const list = document.getElementById('list-'+type);
+  const items = getFiltered(type);
+  const dotCls = ['','dot-1','dot-2','dot-3','dot-4'];
+  list.innerHTML = items.map((s,i) => `
+    <div class="scenario-item" id="item-${type}-${i}" onclick="selectScenario('${type}',${i})">
+      <div class="diff-dot-sm ${dotCls[s.difficulty]}"></div>
+      <div>
+        <div class="scenario-item-title">${s.title}</div>
+        <div class="scenario-item-cat">${s.category}</div>
+      </div>
+    </div>`).join('');
+}
+
+function selectScenario(type, idx) {
+  if (state[type].spinning) return;
+  const items = getFiltered(type);
+  const scenario = items[idx];
+  if (!scenario) return;
+  document.querySelectorAll(`#list-${type} .scenario-item`).forEach(el => el.classList.remove('active'));
+  const item = document.getElementById(`item-${type}-${idx}`);
+  if (item) { item.classList.add('active'); item.scrollIntoView({block:'nearest'}); }
+  const targetAngle = getAngleForIndex(type, idx);
+  animateToAngle(type, targetAngle, scenario, idx);
+}
+
+function getAngleForIndex(type, idx) {
+  const items = getFiltered(type);
+  const n = items.length;
+  const arc = (2*Math.PI)/n;
+  const currentNorm = ((state[type].angle%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+  const targetCenter = idx*arc + arc/2;
+  let delta = ((0 - targetCenter) - currentNorm + 4*Math.PI) % (2*Math.PI);
+  if (delta < 0.1) delta += 2*Math.PI;
+  return state[type].angle + delta + 2*Math.PI;
+}
+
+function animateToAngle(type, targetAngle, scenario, idx) {
+  state[type].spinning = true;
+  document.getElementById('btn-'+type).disabled = true;
+  const start = state[type].angle;
+  const duration = 600;
+  const startTime = performance.now();
+  function animate(now) {
+    const t = Math.min((now-startTime)/duration, 1);
+    const ease = 1 - Math.pow(1-t, 3);
+    state[type].angle = start + (targetAngle-start)*ease;
+    drawWheel(type, idx);
+    if (t < 1) { requestAnimationFrame(animate); }
+    else {
+      state[type].angle = targetAngle;
+      state[type].spinning = false;
+      state[type].currentScenario = scenario;
+      state[type].currentIndex = idx;
+      document.getElementById('btn-'+type).disabled = false;
+      document.getElementById('result-'+type).textContent = scenario.title;
+      showCard(type, scenario);
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function spin(type) {
+  if (state[type].spinning) return;
+  document.getElementById('card-'+type).classList.remove('visible');
+  document.getElementById('result-'+type).textContent = '';
+  document.querySelectorAll(`#list-${type} .scenario-item`).forEach(el => el.classList.remove('active'));
+  state[type].spinning = true;
+  document.getElementById('btn-'+type).disabled = true;
+  const extraSpins = (4+Math.floor(Math.random()*5))*2*Math.PI;
+  const target = state[type].angle + extraSpins + Math.random()*2*Math.PI;
+  const start = state[type].angle;
+  const duration = 3000 + Math.random()*1000;
+  const startTime = performance.now();
+  function animate(now) {
+    const t = Math.min((now-startTime)/duration, 1);
+    const ease = 1 - Math.pow(1-t, 3);
+    state[type].angle = start + (target-start)*ease;
+    drawWheel(type);
+    if (t < 1) { requestAnimationFrame(animate); }
+    else {
+      state[type].angle = target;
+      state[type].spinning = false;
+      document.getElementById('btn-'+type).disabled = false;
+      const items = getFiltered(type);
+      const n = items.length;
+      const arc = (2*Math.PI)/n;
+      const norm = ((state[type].angle%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+      const idx = Math.floor(n - ((norm/arc)%n))%n;
+      const scenario = items[idx];
+      state[type].currentScenario = scenario;
+      state[type].currentIndex = idx;
+      document.querySelectorAll(`#list-${type} .scenario-item`).forEach(el => el.classList.remove('active'));
+      const item = document.getElementById(`item-${type}-${idx}`);
+      if (item) { item.classList.add('active'); item.scrollIntoView({block:'nearest'}); }
+      drawWheel(type, idx);
+      document.getElementById('result-'+type).textContent = scenario.title;
+      showCard(type, scenario);
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function onFilterChange(type) {
+  state[type].currentScenario = null;
+  state[type].currentIndex = -1;
+  document.getElementById('result-'+type).textContent = '';
+  document.getElementById('card-'+type).classList.remove('visible');
+  drawWheel(type);
+  buildList(type);
+}
+
+// Global locked client state
+const lockedClient = { active: false, name: '', briefHTML: '', type: '' };
+
+function lockClient(name, briefHTML, type) {
+  lockedClient.active = true;
+  lockedClient.name = name;
+  lockedClient.briefHTML = briefHTML;
+  lockedClient.type = type;
+  const banner = document.getElementById('locked-banner');
+  banner.classList.add('visible');
+  document.getElementById('locked-banner-name').textContent = name;
+  ['sales','coaching','fitness','program'].forEach(t => {
+    if (state[t].currentScenario) showCard(t, state[t].currentScenario);
+  });
+}
+
+function unlockClient() {
+  lockedClient.active = false;
+  lockedClient.name = '';
+  lockedClient.briefHTML = '';
+  lockedClient.type = '';
+  document.getElementById('locked-banner').classList.remove('visible');
+  ['sales','coaching','fitness','program'].forEach(t => {
+    if (state[t].currentScenario) showCard(t, state[t].currentScenario);
+  });
+}
+
+function showCard(type, s) {
+  const card = document.getElementById('card-'+type);
+  const badgeClass = type==='sales'?'badge-sales':type==='coaching'?'badge-coaching':type==='program'?'badge-program':'badge-fitness';
+  const diffLabels = ['','Foundation','Developing','Advanced','Expert'];
+  const diffClasses = ['','diff-1','diff-2','diff-3','diff-4'];
+
+  let briefSection = '';
+  if (lockedClient.active) {
+    briefSection = `
+      <div class="section-label">Client brief</div>
+      <div class="locked-brief-box">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+          <span style="font-size:14px;font-weight:600;color:var(--text);">${lockedClient.name}</span>
+          <span style="font-size:11px;background:var(--bg-warning);color:var(--text-warning);border-radius:var(--radius);padding:3px 8px;font-weight:600;">Locked</span>
+        </div>
+        ${lockedClient.briefHTML}
+      </div>`;
+  } else {
+    briefSection = `
+      <div class="section-label">Client brief</div>
+      <div class="brief-area" id="brief-area-${type}">
+        <button class="generate-btn" onclick="generateBrief('${type}')">Generate client</button>
+      </div>`;
+  }
+
+  const venueSection = (type === 'program' && s.venueLabel) ? `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+      <span style="font-size:12px;font-weight:600;background:var(--bg-secondary);color:var(--text-secondary);border-radius:var(--radius);padding:4px 10px;">${s.days}x / week</span>
+      <span style="font-size:12px;font-weight:600;background:var(--bg-secondary);color:var(--text-secondary);border-radius:var(--radius);padding:4px 10px;">${s.venueLabel}</span>
+    </div>` : '';
+
+  const cuesSection = (type !== 'program' && s.cues) ? `
+    <div class="divider"></div>
+    <div class="section-label">Coaching cues</div>
+    <ul class="cues-list">${s.cues.map(c=>`<li>${c}</li>`).join('')}</ul>
+    <div class="divider"></div>
+    <div class="section-label">Debrief questions</div>
+    <ul class="debrief-list">${s.debrief.map(q=>`<li>${q}</li>`).join('')}</ul>` : '';
+
+  card.innerHTML = `
+    <div class="card-badges">
+      <span class="badge ${badgeClass}">${s.category}</span>
+      <span class="badge ${diffClasses[s.difficulty]}">${diffLabels[s.difficulty]}</span>
+    </div>
+    <div class="scenario-title">${s.title}</div>
+    ${venueSection}
+    <div class="section-label">Objective</div>
+    <div class="section-body">${s.objective}</div>
+    <div class="section-label">Scenario setup</div>
+    <div class="section-body">${s.setup}</div>
+    <div class="divider"></div>
+    ${briefSection}
+    ${cuesSection}
+  `;
+  card.classList.add('visible');
+
+  // Log the scenario selection and check assignment progress
+  if (currentUser && s) {
+    logEvent('scenario_selected', {
+      tab: type, category: s.category||'',
+      difficulty: String(s.difficulty||''), scenarioTitle: s.title||'',
+      days: String(s.days||''),
+    });
+    checkAssignmentProgress(type, s);
+  }
+}
+
+function toggleSection(contentId, arrowId) {
+  document.getElementById(contentId).classList.toggle('open');
+  document.getElementById(arrowId).classList.toggle('open');
+}
+
+// Store for generated briefs by uid
+const briefStore = {};
+
+// ─── API KEY ────────────────────────────────────────────────────────────────
+const ANTHROPIC_API_KEY = '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';
+// ───────────────────────────────────────────────────────────────────────────
+
+function buildBriefHTML(type, uid, data) {
+  const sections = [];
+  sections.push(briefSection(uid,'profile','Profile',data.profile,true));
+  sections.push(briefSection(uid,'goals','Goals',data.goals,true));
+  sections.push(briefSection(uid,'whww','WHWW History',data.whww,false));
+  sections.push(briefSection(uid,'medical','Medical & Health History',data.medical,false));
+  sections.push(briefSection(uid,'injury','Injury History & PAR-Q',data.injury,false));
+  sections.push(briefSection(uid,'training','Training Profile',data.training,false));
+  sections.push(briefSection(uid,'fuel','Fuel & Lifestyle',data.fuel,false));
+  sections.push(briefSection(uid,'exercises','Exercise Struggles',data.exercises,true));
+  sections.push(briefSection(uid,'limitation','General Movement Limitation',data.limitation,true));
+  if (data.preferences && data.preferences.length) {
+    sections.push(briefSection(uid,'preferences','Training Preferences & Demeanor',data.preferences,true));
+  }
+  sections.push(briefSection(uid,'personality','Personality / Roleplay Notes',data.personality,false));
+  const inner = sections.join('');
+  briefStore[uid] = { name: data.name, inner, type };
+  return `
+    <div class="brief-box">
+      <div class="brief-header">
+        <div class="brief-name">${data.name}</div>
+        <div style="display:flex;gap:6px;">
+          <button class="lock-btn" onclick="lockClientById('${uid}')">Lock client</button>
+          <button class="regen-btn" onclick="generateBrief('${type}', true)">Regenerate</button>
+        </div>
+      </div>
+      ${inner}
+    </div>`;
+}
+
+function lockClientById(uid) {
+  const entry = briefStore[uid];
+  if (!entry) return;
+  lockClient(entry.name, entry.inner, entry.type);
+}
+
+function briefSection(uid, key, label, items, defaultOpen) {
+  const cid = `bc-${uid}-${key}`;
+  const aid = `ba-${uid}-${key}`;
+  return `
+    <div class="brief-section">
+      <div class="brief-toggle" onclick="toggleSection('${cid}','${aid}')">
+        <span class="brief-section-title">${label}</span>
+        <span class="brief-arrow ${defaultOpen?'open':''}" id="${aid}">▶</span>
+      </div>
+      <div class="brief-content ${defaultOpen?'open':''}" id="${cid}">
+        <ul class="brief-list">${(items||[]).map(i=>`<li>${i}</li>`).join('')}</ul>
+      </div>
+    </div>`;
+}
+
+function generateBrief(type, regen) {
+  const s = state[type].currentScenario;
+  if (!s) return;
+  const area = document.getElementById('brief-area-'+type);
+  area.innerHTML = `<div class="loading-state"><div class="loading-spinner"></div><div class="loading-text">Generating client brief...</div></div>`;
+
+  const regenNote = regen ? ' Generate a completely different client than before.' : '';
+
+  const systemPrompt = `You are generating fictional client profiles for roleplay training at The Lift, a personal training gym in Woodinville, WA serving busy adults aged 35–55.
+
+The gym uses the T3 Method (Test, Train, Transform), F3 Triad (Form, Function, Fuel), WHWW discovery model, NASM Corrective Exercise protocols, InBody assessments, and The Lift App (Trainerize) for client management.
+
+Return ONLY valid JSON. No markdown fences, no preamble, no explanation. Every value must be an array of concise strings (1–2 sentences each). The name field is a single string.
+
+Make clients feel like real people from the greater Seattle/Eastside area. Vary demographics, occupations, and backgrounds. Keep all details internally consistent.${regenNote}`;
+
+  const programExtra = type === 'program' ? `
+- preferences: array of 4–6 strings covering this client's training preferences and demeanor: (1) their general demeanor and communication style in training, (2) variety vs. repetition preference — do they want the same workout or new exercises constantly, (3) intensity preference — do they love sweaty high-intensity work or prefer controlled strength-focused training, (4) any specific exercise types they love or hate, (5) how they respond to being pushed vs. given autonomy, (6) any other preferences relevant to program design (e.g. prefers short sessions, hates cardio, loves competition, needs music, gets bored easily)` : '';
+
+  const userPrompt = `Generate a fully unified client brief that can be used across any sales, coaching, fitness, or program design scenario at The Lift.
+
+The brief is being generated in the context of this specific scenario — use it ONLY to shape the personality and roleplay notes so they are relevant to this situation. All other fields should be complete and realistic regardless of scenario type.
+
+Scenario context: "${s.title}" — ${s.setup}${s.venueLabel ? ` | Training venue: ${s.venueLabel} | Days/week: ${s.days}` : ''}
+
+Return JSON with ALL of the following keys:
+- name: string (first and last name)
+- profile: array of 4–5 strings (age, occupation, family situation, lifestyle, how they found The Lift)
+- goals: array of 4–5 strings (surface goal, real goal with emotional driver, deepest goal, how long they've had it, what success looks like to them)
+- whww: array of 4–5 strings (what they've tried, how long, why it didn't work, why now)
+- medical: array of 3–5 strings (medical history, current medications or conditions, physician clearance status)
+- injury: array of 3–5 strings (injury history, PAR-Q flags, current limitations, any surgical history)
+- training: array of 4–5 strings (current program phase, weeks in program, compliance history, session behavior and attitude, how they respond to coaching)
+- fuel: array of 4–5 strings (current nutrition habits, sleep quality and quantity, stress levels, hydration, any supplement use)
+- exercises: array of 3 strings (each naming a specific exercise this client struggles with and the exact movement fault or complaint — e.g. "Goblet squat: knees cave medially and heels rise at depth due to limited ankle dorsiflexion")
+- limitation: array of 2–3 strings (one general movement limitation pattern the coach must work through, its likely root cause, and how it shows up across multiple exercises)
+- personality: array of 5–6 strings (how this client communicates, what makes them engage or disengage, likely resistance patterns, emotional triggers, and SPECIFIC roleplay guidance for the scenario: "${s.title}" — how they will behave in this exact situation)${programExtra}
+
+Include enough detail in every section that a coach could pick up this brief cold and use it for any scenario with this client convincingly.`;
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 2000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }]
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.error) throw new Error(data.error.message);
+    const raw = data.content.map(i => i.text||'').join('').replace(/```json|```/g,'').trim();
+    const parsed = JSON.parse(raw);
+    const uid = Date.now().toString(36);
+    area.innerHTML = buildBriefHTML(type, uid, parsed);
+    // Log client generation
+    if (currentUser) {
+      const s = state[type].currentScenario;
+      logEvent('client_generated', {
+        tab: type, category: s ? s.category : '',
+        difficulty: String(s ? s.difficulty : ''), scenarioTitle: s ? s.title : '',
+        days: String(s && s.days ? s.days : ''),
+      });
+    }
+  })
+  .catch(err => {
+    area.innerHTML = `<div class="error-state">Could not generate brief — ${err.message}. <button class="generate-btn" style="margin-left:8px" onclick="generateBrief('${type}')">Retry</button></div>`;
+  });
+}
+
+function switchTab(t) {
+  const allTabs = ['sales','coaching','fitness','program','assignments','dashboard','admin'];
+  allTabs.forEach(id => {
+    const el = document.getElementById('tab-'+id);
+    if (el) el.style.display = id===t ? '' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+  const tabBtns = ['sales','coaching','fitness','program','assignments','dashboard','admin'];
+  document.querySelectorAll('.tab').forEach((el,i) => {
+    if (tabBtns[i] === t) el.classList.add('active');
+  });
+  if (t === 'assignments') renderAssignments();
+  if (t === 'dashboard') renderDashboard();
+  if (t === 'admin') renderAdmin();
+}
+
+// ─── CONFIG ─────────────────────────────────────────────────────────────────
+const SHEETS_KEY     = 'AIzaSyBsv30jobFBCxoGjXsX42GNFu2a-Vj4LIs';
+const SHEET_ID       = '1OG9HtdaUZkC5Yyhy6YjTesexR6lqVEZ-vHdjPYaas8k';
+const ALEX_ID        = 'alex';
+let APPS_SCRIPT_URL  = 'https://script.google.com/macros/s/AKfycbwYr_FVDNaZaergXCXVe9sP74ag8-zZV_3OAU55eOiQuCg4d1l4LW4tC9ZySwmYNArZ/exec';
+
+// ─── CURRENT SESSION ────────────────────────────────────────────────────────
+let currentUser  = null;
+let sessionId    = null;
+let sessionStart = null;
+
+// ─── API HELPERS ─────────────────────────────────────────────────────────────
+const BASE = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}`;
+
+async function api(action, data = {}) {
+  if (!APPS_SCRIPT_URL) throw new Error('Apps Script URL not configured. See setup instructions.');
+  const r = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' }, // Apps Script requires text/plain for CORS
+    body: JSON.stringify({ action, ...data })
+  });
+  const text = await r.text();
+  try { return JSON.parse(text); } catch(e) { return { error: text }; }
+}
+
+async function apiGet(action, params = {}) {
+  if (!APPS_SCRIPT_URL) throw new Error('Apps Script URL not configured.');
+  const qs = new URLSearchParams({ action, ...params }).toString();
+  const r = await fetch(`${APPS_SCRIPT_URL}?${qs}`);
+  const text = await r.text();
+  try { return JSON.parse(text); } catch(e) { return []; }
+}
+
+// ─── USERS ───────────────────────────────────────────────────────────────────
+async function loadUsers() {
+  return await apiGet('getUsers');
+}
+
+async function findUser(name, id) {
+  const result = await api('findUser', { name, id });
+  return result.user || null;
+}
+
+async function createUser(name, id) {
+  const result = await api('createUser', { name, id });
+  return result.user || null;
+}
+
+async function updateLastLogin(userId) {
+  await api('updateLastLogin', { userId });
+}
+
+async function setUserAdmin(userId, isAdmin) {
+  await api('setUserAdmin', { userId, isAdmin });
+}
+
+// ─── LOGIN / LOGOUT ──────────────────────────────────────────────────────────
+async function doLogin() {
+  const name = document.getElementById('login-name').value.trim();
+  const id   = document.getElementById('login-id').value.trim();
+  if (!name || !id) { document.getElementById('login-error').textContent = 'Please enter your name and ID.'; return; }
+  if (!APPS_SCRIPT_URL) {
+    document.getElementById('login-error').innerHTML = 'Setup needed — see <strong>Setup Instructions</strong> below.';
+    document.getElementById('setup-instructions').style.display = '';
+    return;
+  }
+  document.getElementById('login-error').textContent = 'Signing in...';
+  try {
+    let user = await findUser(name, id);
+    if (!user) {
+      user = await createUser(name, id);
+    } else {
+      await updateLastLogin(id);
+      user.isAdmin = user.isAdmin === 'true' || user.isAdmin === true || id === ALEX_ID;
+    }
+    if (id === ALEX_ID) user.isAdmin = true;
+    currentUser = user;
+    await startSession();
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('top-bar-user').style.display = 'flex';
+    document.getElementById('top-bar-name').textContent = user.name;
+    if (user.isAdmin) {
+      document.getElementById('top-bar-badge').style.display = '';
+      document.getElementById('tab-btn-dashboard').style.display = '';
+      document.getElementById('tab-btn-admin').style.display = '';
+    }
+  } catch(e) {
+    document.getElementById('login-error').textContent = 'Error: ' + e.message;
+  }
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('login-overlay').style.display !== 'none') doLogin();
+});
+
+function doLogout() {
+  endSession();
+  currentUser = null;
+  sessionId = null;
+  document.getElementById('login-overlay').style.display = 'flex';
+  document.getElementById('top-bar-user').style.display = 'none';
+  document.getElementById('tab-btn-dashboard').style.display = 'none';
+  document.getElementById('tab-btn-admin').style.display = 'none';
+  document.getElementById('login-name').value = '';
+  document.getElementById('login-id').value = '';
+  document.getElementById('login-error').textContent = '';
+  switchTab('sales');
+}
+
+// ─── SESSIONS ────────────────────────────────────────────────────────────────
+async function startSession() {
+  sessionId    = Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+  sessionStart = new Date();
+  await api('startSession', {
+    sessionId, userId: currentUser.id, userName: currentUser.name,
+    startTime: sessionStart.toISOString()
+  });
+}
+
+async function endSession() {
+  if (!sessionId || !sessionStart || !currentUser) return;
+  const end  = new Date();
+  const mins = Math.round((end - sessionStart) / 60000);
+  await api('endSession', { sessionId, endTime: end.toISOString(), durationMinutes: String(mins) });
+}
+
+window.addEventListener('beforeunload', () => { if (currentUser) endSession(); });
+
+// ─── EVENTS ──────────────────────────────────────────────────────────────────
+async function logEvent(eventType, meta = {}) {
+  if (!currentUser || !sessionId) return;
+  await api('logEvent', {
+    eventId: Date.now().toString(36), sessionId,
+    userId: currentUser.id, userName: currentUser.name,
+    timestamp: new Date().toISOString(), eventType,
+    tab: meta.tab||'', category: meta.category||'',
+    difficulty: String(meta.difficulty||''), scenarioTitle: meta.scenarioTitle||'',
+    days: String(meta.days||''), assignmentId: meta.assignmentId||''
+  });
+}
+
+// ─── ASSIGNMENTS ─────────────────────────────────────────────────────────────
+async function loadAssignments() {
+  return await apiGet('getAssignments');
+}
+
+async function createAssignment(data) {
+  const id  = 'asgn_' + Date.now().toString(36);
+  const now = new Date().toISOString();
+  await api('createAssignment', {
+    assignmentId: id, assignedTo: data.assignedTo, assignedToName: data.assignedToName,
+    assignedBy: currentUser.id, assignedByName: currentUser.name, createdAt: now,
+    dueDate: data.dueDate||'', tab: data.tab||'all', category: data.category||'all',
+    difficulty: data.difficulty||'all', days: data.days||'all',
+    requiredCount: String(data.requiredCount||3), notes: data.notes||''
+  });
+  return id;
+}
+
+async function updateAssignmentProgress(assignmentId, completedScenario) {
+  await api('updateAssignment', { assignmentId, completedScenario });
+}
+
+// ─── RENDER: ASSIGNMENTS VIEW ────────────────────────────────────────────────
+async function renderAssignments() {
+  const el = document.getElementById('assignments-coach-view');
+  el.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><div class="loading-text">Loading assignments...</div></div>';
+  try {
+    const all = await loadAssignments();
+    const mine = all.filter(a => a.assignedTo === currentUser.id);
+    const users = currentUser.isAdmin ? await loadUsers() : [];
+
+    let html = '';
+
+    // Admin: assignment builder
+    if (currentUser.isAdmin) {
+      const userOptions = users.filter(u=>u.id!=='').map(u=>`<option value="${u.id}">${u.name} (${u.id})</option>`).join('');
+      html += `
+      <div class="assign-form">
+        <h3>Create Assignment</h3>
+        <div class="form-row">
+          <label>Assign to:</label>
+          <select id="asgn-user"><option value="">— select coach —</option>${userOptions}</select>
+        </div>
+        <div class="form-row">
+          <label>Tab:</label>
+          <select id="asgn-tab">
+            <option value="all">Any tab</option>
+            <option value="sales">Sales Consultation</option>
+            <option value="coaching">Client Coaching</option>
+            <option value="fitness">Fitness Coaching</option>
+            <option value="program">Program Design</option>
+          </select>
+          <label>Category:</label>
+          <select id="asgn-cat">
+            <option value="all">Any category</option>
+            <option value="Consultation Flow">Consultation Flow</option>
+            <option value="Objections">Objections</option>
+            <option value="Session Management">Session Management</option>
+            <option value="Client Situations">Client Situations</option>
+            <option value="Fuel Consultation">Fuel Consultation</option>
+            <option value="Athlete Check-In">Athlete Check-In</option>
+            <option value="Corrective Exercise">Corrective Exercise</option>
+            <option value="Fat Loss">Fat Loss</option>
+            <option value="Muscle & Strength">Muscle &amp; Strength</option>
+            <option value="Corrective & Rehab">Corrective &amp; Rehab</option>
+            <option value="Special Populations">Special Populations</option>
+            <option value="Travel & Remote">Travel &amp; Remote</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label>Difficulty:</label>
+          <select id="asgn-diff">
+            <option value="all">Any</option>
+            <option value="1">Foundation</option>
+            <option value="2">Developing</option>
+            <option value="3">Advanced</option>
+            <option value="4">Expert</option>
+          </select>
+          <label>Days/wk:</label>
+          <select id="asgn-days">
+            <option value="all">Any</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+          </select>
+          <label>Count:</label>
+          <input id="asgn-count" type="number" value="3" min="1" max="20" />
+        </div>
+        <div class="form-row">
+          <label>Due date:</label>
+          <input id="asgn-due" type="date" />
+          <label>Notes:</label>
+          <input id="asgn-notes" type="text" placeholder="Optional notes for the coach" />
+        </div>
+        <button class="submit-assign-btn" onclick="submitAssignment()">Create Assignment</button>
+        <span id="asgn-msg" style="font-size:13px;color:var(--text-success);margin-left:12px;"></span>
+      </div>`;
+    }
+
+    // All users: their assignments
+    if (!mine.length) {
+      html += '<div class="empty-state">No assignments yet.</div>';
+    } else {
+      html += '<div class="report-section"><h2>My Assignments</h2>';
+      mine.forEach(a => {
+        const completed = parseInt(a.completedCount)||0;
+        const required  = parseInt(a.requiredCount)||1;
+        const pct = Math.min(100, Math.round(completed/required*100));
+        const statusClass = a.status==='complete'?'status-complete':a.status==='overdue'?'status-overdue':'status-active';
+        const statusLabel = a.status==='complete'?'Complete':a.status==='overdue'?'Overdue':'Active';
+        const filters = [
+          a.tab!=='all'?`Tab: ${a.tab}`:'',
+          a.category!=='all'?`Category: ${a.category}`:'',
+          a.difficulty!=='all'?['','Foundation','Developing','Advanced','Expert'][parseInt(a.difficulty)]:'',
+          a.days!=='all'?`${a.days} days/wk`:'',
+        ].filter(Boolean).join(' · ') || 'Any scenario';
+        const done = (a.completedScenarios||'').split('|').filter(Boolean);
+        html += `
+        <div class="assignment-card">
+          <div class="assignment-header">
+            <div>
+              <div class="assignment-title">${filters}</div>
+              <div class="assignment-meta">From: ${a.assignedByName} · ${a.dueDate?'Due: '+a.dueDate:''} ${a.notes?'· '+a.notes:''}</div>
+            </div>
+            <div>
+              <span class="status-badge ${statusClass}">${statusLabel}</span>
+              <div class="assignment-progress" style="text-align:right;margin-top:4px">${completed} / ${required}</div>
+            </div>
+          </div>
+          <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+          ${done.length?`<ul class="checklist">${done.map(s=>`<li><span class="checklist-check checked">✓</span><span>${s}</span></li>`).join('')}</ul>`:''}
+          ${completed < required ? `<div style="font-size:12px;color:var(--text-tertiary);margin-top:8px;">Complete ${required-completed} more scenario${required-completed!==1?'s':''} — use the filters below to find them, or spin the wheel.</div>` : ''}
+        </div>`;
+      });
+      html += '</div>';
+    }
+
+    // Admin: all assignments
+    if (currentUser.isAdmin) {
+      const others = all.filter(a => a.assignedTo !== currentUser.id);
+      if (others.length) {
+        html += '<div class="report-section"><h2>All Assignments</h2>';
+        others.forEach(a => {
+          const completed = parseInt(a.completedCount)||0;
+          const required  = parseInt(a.requiredCount)||1;
+          const pct = Math.min(100, Math.round(completed/required*100));
+          const statusClass = a.status==='complete'?'status-complete':a.status==='overdue'?'status-overdue':'status-active';
+          html += `
+          <div class="assignment-card">
+            <div class="assignment-header">
+              <div>
+                <div class="assignment-title">${a.assignedToName}</div>
+                <div class="assignment-meta">${[a.tab!=='all'?a.tab:'',a.category!=='all'?a.category:''].filter(Boolean).join(' · ')||'Any scenario'} ${a.notes?'· '+a.notes:''}</div>
+              </div>
+              <div>
+                <span class="status-badge ${statusClass}">${a.status}</span>
+                <div class="assignment-progress" style="text-align:right;margin-top:4px">${completed} / ${required}</div>
+              </div>
+            </div>
+            <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+          </div>`;
+        });
+        html += '</div>';
+      }
+    }
+
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div class="error-state">Could not load assignments — ${e.message}</div>`;
+  }
+}
+
+async function submitAssignment() {
+  const userId = document.getElementById('asgn-user').value;
+  if (!userId) { document.getElementById('asgn-msg').textContent = 'Select a coach first.'; return; }
+  const users = await loadUsers();
+  const user = users.find(u=>u.id===userId);
+  document.getElementById('asgn-msg').textContent = 'Saving...';
+  await createAssignment({
+    assignedTo: userId,
+    assignedToName: user ? user.name : userId,
+    tab: document.getElementById('asgn-tab').value,
+    category: document.getElementById('asgn-cat').value,
+    difficulty: document.getElementById('asgn-diff').value,
+    days: document.getElementById('asgn-days').value,
+    requiredCount: parseInt(document.getElementById('asgn-count').value)||3,
+    dueDate: document.getElementById('asgn-due').value,
+    notes: document.getElementById('asgn-notes').value,
+  });
+  document.getElementById('asgn-msg').textContent = '✓ Assignment created';
+  setTimeout(()=>{ document.getElementById('asgn-msg').textContent=''; renderAssignments(); }, 1500);
+}
+
+// ─── RENDER: DASHBOARD ───────────────────────────────────────────────────────
+async function sheetsRead(tab) {
+  try {
+    const r = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(tab+'!A:Z')}?key=${SHEETS_KEY}`);
+    const d = await r.json();
+    const rows = d.values || [];
+    if (rows.length < 1) return [];
+    const headers = rows[0];
+    return rows.slice(1).map(row => {
+      const obj = {};
+      headers.forEach((h,i) => obj[h] = row[i]||'');
+      return obj;
+    });
+  } catch(e) { return []; }
+}
+
+async function renderDashboard() {
+  const el = document.getElementById('dashboard-view');
+  el.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><div class="loading-text">Loading dashboard...</div></div>';
+  try {
+    const [sessions, events, users] = await Promise.all([
+      sheetsRead('Sessions'),
+      sheetsRead('Events'),
+      sheetsRead('Users'),
+    ]);
+
+    const userStats = {};
+    users.forEach(u => {
+      userStats[u.id] = { name: u.name, sessions: 0, totalMins: 0, scenariosCompleted: 0, clientsGenerated: 0, lastActive: '' };
+    });
+    sessions.forEach(s => {
+      if (!userStats[s.userId]) userStats[s.userId] = { name: s.userName, sessions:0, totalMins:0, scenariosCompleted:0, clientsGenerated:0, lastActive:'' };
+      userStats[s.userId].sessions++;
+      userStats[s.userId].totalMins += parseInt(s.durationMinutes)||0;
+      if (s.startTime > (userStats[s.userId].lastActive||'')) userStats[s.userId].lastActive = s.startTime;
+    });
+    events.forEach(ev => {
+      if (!userStats[ev.userId]) userStats[ev.userId] = { name: ev.userName, sessions:0, totalMins:0, scenariosCompleted:0, clientsGenerated:0, lastActive:'' };
+      if (ev.eventType === 'scenario_selected') userStats[ev.userId].scenariosCompleted++;
+      if (ev.eventType === 'client_generated')  userStats[ev.userId].clientsGenerated++;
+    });
+
+    const totalSessions  = sessions.length;
+    const totalScenarios = events.filter(e=>e.eventType==='scenario_selected').length;
+    const totalClients   = events.filter(e=>e.eventType==='client_generated').length;
+    const totalMins      = sessions.reduce((s,r)=>s+(parseInt(r.durationMinutes)||0),0);
+
+    const byTab = {};
+    events.filter(e=>e.eventType==='scenario_selected').forEach(e => {
+      const key = e.tab || 'unknown';
+      byTab[key] = (byTab[key]||0)+1;
+    });
+    const byCategory = {};
+    events.filter(e=>e.eventType==='scenario_selected'&&e.category).forEach(e => {
+      byCategory[e.category] = (byCategory[e.category]||0)+1;
+    });
+
+    let html = `
+    <div class="report-section">
+      <h2>Overview</h2>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Total Sessions</div><div class="stat-value">${totalSessions}</div></div>
+        <div class="stat-card"><div class="stat-label">Total Time</div><div class="stat-value">${totalMins}</div><div class="stat-sub">minutes</div></div>
+        <div class="stat-card"><div class="stat-label">Scenarios Done</div><div class="stat-value">${totalScenarios}</div></div>
+        <div class="stat-card"><div class="stat-label">Clients Generated</div><div class="stat-value">${totalClients}</div></div>
+      </div>
+    </div>
+    <div class="report-section">
+      <h2>Usage by Coach</h2>
+      <table class="report-table">
+        <thead><tr><th>Name</th><th>Sessions</th><th>Time (min)</th><th>Scenarios</th><th>Clients</th><th>Last Active</th></tr></thead>
+        <tbody>
+          ${Object.values(userStats).filter(u=>u.name).sort((a,b)=>b.scenariosCompleted-a.scenariosCompleted).map(u=>`
+            <tr>
+              <td style="font-weight:600;color:var(--text)">${u.name}</td>
+              <td>${u.sessions}</td>
+              <td>${u.totalMins}</td>
+              <td>${u.scenariosCompleted}</td>
+              <td>${u.clientsGenerated}</td>
+              <td>${u.lastActive ? u.lastActive.slice(0,10) : '—'}</td>
+            </tr>`).join('')||'<tr><td colspan="6" style="color:var(--text-tertiary)">No data yet</td></tr>'}
+        </tbody>
+      </table>
+    </div>
+    <div class="report-section" style="display:flex;gap:2rem;flex-wrap:wrap;">
+      <div style="flex:1;min-width:200px;">
+        <h2>By Tab</h2>
+        <table class="report-table">
+          <thead><tr><th>Tab</th><th>Count</th></tr></thead>
+          <tbody>${Object.entries(byTab).sort((a,b)=>b[1]-a[1]).map(([t,c])=>`<tr><td style="text-transform:capitalize">${t}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="2" style="color:var(--text-tertiary)">No data</td></tr>'}</tbody>
+        </table>
+      </div>
+      <div style="flex:1;min-width:200px;">
+        <h2>By Category</h2>
+        <table class="report-table">
+          <thead><tr><th>Category</th><th>Count</th></tr></thead>
+          <tbody>${Object.entries(byCategory).sort((a,b)=>b[1]-a[1]).map(([t,c])=>`<tr><td>${t}</td><td>${c}</td></tr>`).join('')||'<tr><td colspan="2" style="color:var(--text-tertiary)">No data</td></tr>'}</tbody>
+        </table>
+      </div>
+    </div>
+    <div class="report-section">
+      <h2>Recent Activity</h2>
+      <table class="report-table">
+        <thead><tr><th>Date</th><th>Coach</th><th>Type</th><th>Scenario</th><th>Tab</th></tr></thead>
+        <tbody>
+          ${events.slice().reverse().slice(0,40).map(e=>`
+            <tr>
+              <td>${e.timestamp?e.timestamp.slice(0,10):''}</td>
+              <td>${e.userName}</td>
+              <td style="color:var(--text-tertiary)">${e.eventType==='scenario_selected'?'Scenario':'Client'}</td>
+              <td>${e.scenarioTitle||'—'}</td>
+              <td style="text-transform:capitalize">${e.tab||'—'}</td>
+            </tr>`).join('')||'<tr><td colspan="5" style="color:var(--text-tertiary)">No activity yet</td></tr>'}
+        </tbody>
+      </table>
+      <div class="export-row">
+        <button class="export-btn" onclick="exportCSV()">Download CSV</button>
+        <button class="export-btn" onclick="renderDashboard()">↻ Refresh</button>
+      </div>
+    </div>`;
+
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div class="error-state">Could not load dashboard — ${e.message}</div>`;
+  }
+}
+
+function exportCSV() {
+  const tables = document.querySelectorAll('#dashboard-view .report-table');
+  let csv = '';
+  tables.forEach(t => {
+    const rows = Array.from(t.querySelectorAll('tr'));
+    rows.forEach(row => {
+      const cells = Array.from(row.querySelectorAll('th,td')).map(c => '"'+c.textContent.trim().replace(/"/g,'""')+'"');
+      csv += cells.join(',') + '\n';
+    });
+    csv += '\n';
+  });
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'lift_roleplay_report_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+}
+
+// ─── RENDER: ADMIN PANEL ─────────────────────────────────────────────────────
+async function renderAdmin() {
+  const el = document.getElementById('admin-view');
+  el.innerHTML = '<div class="loading-state"><div class="loading-spinner"></div><div class="loading-text">Loading...</div></div>';
+  try {
+    const users = await loadUsers();
+    let html = `
+    <div class="report-section">
+      <h2>User Management</h2>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:1rem;">New users are created automatically when they log in for the first time.</div>
+      ${users.map(u => {
+        const isAdm = u.isAdmin==='true'||u.isAdmin===true;
+        const isAlex = u.id === ALEX_ID;
+        return `<div class="user-row">
+          <div>
+            <div class="user-name">${u.name}</div>
+            <div class="user-id-label">ID: ${u.id} · Last login: ${u.lastLogin?u.lastLogin.slice(0,10):'—'}</div>
+          </div>
+          ${isAlex
+            ? `<span class="admin-toggle is-admin" style="cursor:default">Permanent Admin</span>`
+            : `<button class="admin-toggle ${isAdm?'is-admin':''}" onclick="toggleAdmin('${u.id}',${isAdm})">${isAdm?'Remove Admin':'Make Admin'}</button>`
+          }
+        </div>`;
+      }).join('') || '<div class="empty-state">No users yet.</div>'}
+    </div>`;
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = `<div class="error-state">Could not load admin panel — ${e.message}</div>`;
+  }
+}
+
+async function toggleAdmin(userId, currentlyAdmin) {
+  await setUserAdmin(userId, !currentlyAdmin);
+  renderAdmin();
+}
+
+async function checkAssignmentProgress(type, scenario) {
+  if (!currentUser) return;
+  try {
+    const assignments = await loadAssignments();
+    const uid = String(currentUser.id).toLowerCase();
+    const active = assignments.filter(a =>
+      String(a.assignedTo).toLowerCase() === uid &&
+      a.status === 'active' &&
+      (a.tab === 'all' || a.tab === type) &&
+      (a.category === 'all' || a.category === scenario.category) &&
+      (a.difficulty === 'all' || String(a.difficulty) === String(scenario.difficulty)) &&
+      (a.days === 'all' || !scenario.days || String(a.days) === String(scenario.days))
+    );
+    for (const asgn of active) {
+      await updateAssignmentProgress(asgn.assignmentId, scenario.title);
+    }
+  } catch(e) { /* silent */ }
+}
+
+drawWheel('sales'); buildList('sales');
+drawWheel('coaching'); buildList('coaching');
+drawWheel('fitness'); buildList('fitness');
+drawWheel('program'); buildList('program');
+</script>
+</body>
+</html>
